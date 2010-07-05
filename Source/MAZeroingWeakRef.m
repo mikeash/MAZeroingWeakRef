@@ -44,17 +44,21 @@ static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their
     }
 }
 
-static Class GetRealSuperclass(id obj)
+static Class GetCustomSubclass(id obj)
 {
     Class class = object_getClass(obj);
-    while(![gCustomSubclasses containsObject: class])
-    {
+    while(class && ![gCustomSubclasses containsObject: class])
         class = class_getSuperclass(class);
-        if(!class)
-        {
-            NSLog(@"Coudn't find ZeroingWeakRef subclass in hierarchy starting from %@, should never happen, bailing out", object_getClass(obj));
-            abort();
-        }
+    return class;
+}
+
+static Class GetRealSuperclass(id obj)
+{
+    Class class = GetCustomSubclass(obj);
+    if(!class)
+    {
+        NSLog(@"Coudn't find ZeroingWeakRef subclass in hierarchy starting from %@, should never happen, bailing out", object_getClass(obj));
+        abort();
     }
     return class_getSuperclass(class);
 }
@@ -100,9 +104,9 @@ static Class CreateCustomSubclass(Class class)
 
 static void EnsureCustomSubclass(id obj)
 {
-    Class class = object_getClass(obj);
-    if(![gCustomSubclasses containsObject: class])
+    if(!GetCustomSubclass(obj))
     {
+        Class class = object_getClass(obj);
         Class subclass = [gCustomSubclassMap objectForKey: class];
         if(!subclass)
         {
