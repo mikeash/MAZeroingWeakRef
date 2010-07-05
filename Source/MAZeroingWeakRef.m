@@ -168,7 +168,10 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (id)target
 {
-    return [[_target retain] autorelease];
+    pthread_mutex_lock(&gMutex);
+    id ret = [[_target retain] autorelease];
+    pthread_mutex_unlock(&gMutex);
+    return ret;
 }
 
 - (void)_zeroTarget
