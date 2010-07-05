@@ -20,11 +20,14 @@ int main (int argc, const char * argv[]) {
     NSLog(@"obj is %@", obj);
     NSLog(@"Creating weak ref");
     MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+    MAZeroingWeakRef *ref2 = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+    [ref2 release];
     
     NSLog(@"obj: %@  ref: %@", obj, ref);
     NSLog(@"Releasing obj");
     [obj release];
     NSLog(@"ref: %@", ref);
+    [ref release];
     
     [pool drain];
     
