@@ -21,7 +21,7 @@
 
 @implementation MAZeroingWeakRef
 
-static pthread_mutex_t gMutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t gMutex;
 
 static char gRefHashTableKeyTarget;
 static void *gRefHashTableKey = &gRefHashTableKeyTarget;
@@ -33,6 +33,12 @@ static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their
 {
     if(self == [MAZeroingWeakRef class])
     {
+        pthread_mutexattr_t mutexattr;
+        pthread_mutexattr_init(&mutexattr);
+        pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE);
+        pthread_mutex_init(&gMutex, &mutexattr);
+        pthread_mutexattr_destroy(&mutexattr);
+        
         gCustomSubclasses = [[NSMutableSet alloc] init];
         gCustomSubclassMap = [[NSMutableDictionary alloc] init];
     }
@@ -129,6 +135,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
     pthread_mutex_lock(&gMutex);
     
     id target = ref->_target;
+    
     if(target)
     {
         NSHashTable *table = objc_getAssociatedObject(target, gRefHashTableKey);
