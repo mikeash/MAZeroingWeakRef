@@ -85,19 +85,26 @@ static void CustomSubclassDealloc(id self, SEL _cmd)
     ((void (*)(id, SEL))superDealloc)(self, _cmd);
 }
 
+static BOOL MustNotSubclass(Class class)
+{
+    return strncmp(class_getName(class), "NSCF", 4) == 0;
+}
+
 static Class CreateCustomSubclass(Class class)
 {
+    NSCAssert1(!MustNotSubclass(class), @"Cannot create a weak reference to toll-free bridged class %@", class);
+    
     NSString *newName = [NSString stringWithFormat: @"%s_MAZeroingWeakRefSubclass", class_getName(class)];
     const char *newNameC = [newName UTF8String];
     
     Class subclass = objc_allocateClassPair(class, newNameC, 0);
     
-    class_addMethod(subclass, @selector(release), (IMP)CustomSubclassRelease, "v@:");
-    class_addMethod(subclass, @selector(dealloc), (IMP)CustomSubclassDealloc, "v@:");
+    Method release = class_getInstanceMethod(class, @selector(release));
+    Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
+    class_addMethod(subclass, @selector(release), (IMP)CustomSubclassRelease, method_getTypeEncoding(release));
+    class_addMethod(subclass, @selector(dealloc), (IMP)CustomSubclassDealloc, method_getTypeEncoding(dealloc));
     
     objc_registerClassPair(subclass);
-    
-    [gCustomSubclasses addObject: subclass];
     
     return subclass;
 }
@@ -112,6 +119,7 @@ static void EnsureCustomSubclass(id obj)
         {
             subclass = CreateCustomSubclass(class);
             [gCustomSubclassMap setObject: subclass forKey: class];
+            [gCustomSubclasses addObject: subclass];
         }
         object_setClass(obj, subclass);
     }

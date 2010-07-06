@@ -30,6 +30,16 @@ int main (int argc, const char * argv[]) {
     NSLog(@"ref2: %@", ref2);
     [ref2 release];
     
+    /*
+    NSString *str = [[NSMutableString alloc] initWithFormat: @"Hello, %@!", @"world"];
+    NSLog(@"str: %@", str);
+    ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
+    NSLog(@"str: %@  ref: %@", str, ref);
+    [str release];
+    NSLog(@"ref: %@", ref);
+    [ref release];
+    */
+    
     [pool drain];
     
     sleep(1000);
