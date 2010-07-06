@@ -44,6 +44,13 @@ static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their
     }
 }
 
+static void WhileLocked(void (^block)(void))
+{
+    pthread_mutex_lock(&gMutex);
+    block();
+    pthread_mutex_unlock(&gMutex);
+}
+
 static Class GetCustomSubclass(id obj)
 {
     Class class = object_getClass(obj);
@@ -65,13 +72,11 @@ static Class GetRealSuperclass(id obj)
 
 static void CustomSubclassRelease(id self, SEL _cmd)
 {
-    pthread_mutex_lock(&gMutex);
-    
-    Class superclass = GetRealSuperclass(self);
-    IMP superRelease = class_getMethodImplementation(superclass, @selector(release));
-    ((void (*)(id, SEL))superRelease)(self, _cmd);
-    
-    pthread_mutex_unlock(&gMutex);
+    WhileLocked(^{
+        Class superclass = GetRealSuperclass(self);
+        IMP superRelease = class_getMethodImplementation(superclass, @selector(release));
+        ((void (*)(id, SEL))superRelease)(self, _cmd);
+    });
 }
 
 static void CustomSubclassDealloc(id self, SEL _cmd)
@@ -127,34 +132,30 @@ static void EnsureCustomSubclass(id obj)
 
 static void RegisterRef(MAZeroingWeakRef *ref, id target)
 {
-    pthread_mutex_lock(&gMutex);
-    
-    EnsureCustomSubclass(target);
-    
-    NSHashTable *table = objc_getAssociatedObject(target, gRefHashTableKey);
-    if(!table)
-    {
-        table = [NSHashTable hashTableWithWeakObjects];
-        objc_setAssociatedObject(target, gRefHashTableKey, table, OBJC_ASSOCIATION_RETAIN);
-    }
-    [table addObject: ref];
-    
-    pthread_mutex_unlock(&gMutex);
+    WhileLocked(^{
+        EnsureCustomSubclass(target);
+        
+        NSHashTable *table = objc_getAssociatedObject(target, gRefHashTableKey);
+        if(!table)
+        {
+            table = [NSHashTable hashTableWithWeakObjects];
+            objc_setAssociatedObject(target, gRefHashTableKey, table, OBJC_ASSOCIATION_RETAIN);
+        }
+        [table addObject: ref];
+    });
 }
 
 static void UnregisterRef(MAZeroingWeakRef *ref)
 {
-    pthread_mutex_lock(&gMutex);
-    
-    id target = ref->_target;
-    
-    if(target)
-    {
-        NSHashTable *table = objc_getAssociatedObject(target, gRefHashTableKey);
-        [table removeObject: ref];
-    }
-    
-    pthread_mutex_unlock(&gMutex);
+    WhileLocked(^{
+        id target = ref->_target;
+        
+        if(target)
+        {
+            NSHashTable *table = objc_getAssociatedObject(target, gRefHashTableKey);
+            [table removeObject: ref];
+        }
+    });
 }
 
 - (id)initWithTarget: (id)target
@@ -180,10 +181,11 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (id)target
 {
-    pthread_mutex_lock(&gMutex);
-    id ret = [[_target retain] autorelease];
-    pthread_mutex_unlock(&gMutex);
-    return ret;
+    __block id ret;
+    WhileLocked(^{
+        ret = [_target retain];
+    });
+    return [ret autorelease];
 }
 
 - (void)_zeroTarget

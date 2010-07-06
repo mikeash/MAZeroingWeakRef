@@ -22,6 +22,7 @@ int main (int argc, const char * argv[]) {
     MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: obj];
     MAZeroingWeakRef *ref2 = [[MAZeroingWeakRef alloc] initWithTarget: ref];
     
+    [ref target];
     NSLog(@"obj: %@  ref: %@  ref2: %@", obj, ref, ref2);
     NSLog(@"Releasing obj");
     [obj release];
@@ -40,8 +41,8 @@ int main (int argc, const char * argv[]) {
     [ref release];
     */
     
+    NSLog(@"Done!");
     [pool drain];
-    
     sleep(1000);
     
     return 0;
