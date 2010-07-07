@@ -8,6 +8,7 @@
 
 #import "MAZeroingWeakRef.h"
 
+#import <libkern/OSAtomic.h>
 #import <objc/runtime.h>
 #import <pthread.h>
 
@@ -131,7 +132,6 @@ static BOOL IsTollFreeBridged(Class class, id obj)
 {
     CFTypeID typeID = CFGetTypeID(obj);
     Class tfbClass = __CFRuntimeObjCClassTable[typeID];
-    NSLog(@"%@ %p %d %p", class, __CFRuntimeObjCClassTable, typeID, tfbClass);
     return class == tfbClass;
 }
 
@@ -147,8 +147,11 @@ static Class CreateCustomSubclass(Class class, id obj)
             gCFOriginalFinalizesSize = typeID;
             gCFOriginalFinalizes = realloc(gCFOriginalFinalizes, gCFOriginalFinalizesSize * sizeof(*gCFOriginalFinalizes));
         }
-        gCFOriginalFinalizes[typeID] = cfclass->finalize;
-        cfclass->finalize = CustomCFFinalize;
+        
+        do {
+            gCFOriginalFinalizes[typeID] = cfclass->finalize;
+        } while(!OSAtomicCompareAndSwapPtrBarrier(gCFOriginalFinalizes[typeID], CustomCFFinalize, (void *)&cfclass->finalize));
+            
         return class;
     }
     else
