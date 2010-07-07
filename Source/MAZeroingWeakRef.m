@@ -225,7 +225,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat: @"<%@: %p -> %@>", [self class], self, _target];
+    return [NSString stringWithFormat: @"<%@: %p -> %@>", [self class], self, [self target]];
 }
 
 - (id)target
