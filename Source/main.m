@@ -39,6 +39,14 @@ int main (int argc, const char * argv[])
     NSLog(@"ref: %@  target: %p %@", ref, [ref target], [ref target]);
     [ref release];
     
+    NSString *str = [[NSMutableString alloc] initWithString: @"Test String"];
+    NSLog(@"str: %@", str);
+    ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
+    NSLog(@"str: %@  ref: %@", str, ref);
+    [str release];
+    NSLog(@"ref: %@  target: %p %@", ref, [ref target], [ref target]);
+    [ref release];
+    
     NSLog(@"Done!");
     [pool drain];
     sleep(1000);
