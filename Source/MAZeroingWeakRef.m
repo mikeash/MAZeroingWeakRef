@@ -35,6 +35,7 @@ typedef struct __CFRuntimeClass {	// Version 0 struct
 } CFRuntimeClass;
 
 extern CFRuntimeClass * _CFRuntimeGetClassWithTypeID(CFTypeID typeID);
+extern Class *__CFRuntimeObjCClassTable;
 
 
 static pthread_mutex_t gMutex;
@@ -128,7 +129,10 @@ static void CustomCFFinalize(CFTypeRef cf)
 
 static BOOL IsTollFreeBridged(Class class, id obj)
 {
-    return CFGetTypeID(obj) != CFGetTypeID([MAZeroingWeakRef class]);
+    CFTypeID typeID = CFGetTypeID(obj);
+    Class tfbClass = __CFRuntimeObjCClassTable[typeID];
+    NSLog(@"%@ %p %d %p", class, __CFRuntimeObjCClassTable, typeID, tfbClass);
+    return class == tfbClass;
 }
 
 static Class CreateCustomSubclass(Class class, id obj)
