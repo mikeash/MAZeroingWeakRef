@@ -124,14 +124,14 @@ static void CustomCFFinalize(CFTypeRef cf)
     });
 }
 
-static BOOL MustNotSubclass(Class class, id obj)
+static BOOL IsTollFreeBridged(Class class, id obj)
 {
     return CFGetTypeID(obj) != CFGetTypeID([MAZeroingWeakRef class]);
 }
 
 static Class CreateCustomSubclass(Class class, id obj)
 {
-    if(MustNotSubclass(class, obj))
+    if(IsTollFreeBridged(class, obj))
     {
         CFTypeID typeID = CFGetTypeID(obj);
         CFRuntimeClass *cfclass = _CFRuntimeGetClassWithTypeID(typeID);
