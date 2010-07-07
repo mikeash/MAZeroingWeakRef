@@ -21,6 +21,22 @@
 
 @implementation MAZeroingWeakRef
 
+typedef struct __CFRuntimeClass {	// Version 0 struct
+    CFIndex version;
+    const char *className;
+    void (*init)(CFTypeRef cf);
+    CFTypeRef (*copy)(CFAllocatorRef allocator, CFTypeRef cf);
+    void (*finalize)(CFTypeRef cf);
+    Boolean (*equal)(CFTypeRef cf1, CFTypeRef cf2);
+    CFHashCode (*hash)(CFTypeRef cf);
+    CFStringRef (*copyFormattingDesc)(CFTypeRef cf, CFDictionaryRef formatOptions);	// str with retain
+    CFStringRef (*copyDebugDesc)(CFTypeRef cf);	// str with retain
+    void (*reclaim)(CFTypeRef cf);
+} CFRuntimeClass;
+
+extern CFRuntimeClass * _CFRuntimeGetClassWithTypeID(CFTypeID typeID);
+
+
 static pthread_mutex_t gMutex;
 
 static char gRefHashTableKeyTarget;
@@ -29,10 +45,15 @@ static void *gRefHashTableKey = &gRefHashTableKeyTarget;
 static NSMutableSet *gCustomSubclasses;
 static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their custom subclasses
 
+typedef void (*CFFinalizeFptr)(CFTypeRef);
+static CFFinalizeFptr *gCFOriginalFinalizes;
+static size_t gCFOriginalFinalizesSize;
+
 + (void)initialize
 {
     if(self == [MAZeroingWeakRef class])
     {
+        CFStringCreateMutable(NULL, 0);
         pthread_mutexattr_t mutexattr;
         pthread_mutexattr_init(&mutexattr);
         pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE);
@@ -90,28 +111,56 @@ static void CustomSubclassDealloc(id self, SEL _cmd)
     ((void (*)(id, SEL))superDealloc)(self, _cmd);
 }
 
-static BOOL MustNotSubclass(Class class)
+static void CustomCFFinalize(CFTypeRef cf)
 {
-    return strncmp(class_getName(class), "NSCF", 4) == 0;
+    WhileLocked(^{
+        if(CFGetRetainCount(cf) == 1)
+        {
+            NSHashTable *table = objc_getAssociatedObject((id)cf, gRefHashTableKey);
+            for(MAZeroingWeakRef *ref in table)
+                [ref _zeroTarget];
+            gCFOriginalFinalizes[CFGetTypeID(cf)](cf);
+        }
+    });
 }
 
-static Class CreateCustomSubclass(Class class)
+static BOOL MustNotSubclass(Class class, id obj)
 {
-    NSCAssert1(!MustNotSubclass(class), @"Cannot create a weak reference to toll-free bridged class %@", class);
-    
-    NSString *newName = [NSString stringWithFormat: @"%s_MAZeroingWeakRefSubclass", class_getName(class)];
-    const char *newNameC = [newName UTF8String];
-    
-    Class subclass = objc_allocateClassPair(class, newNameC, 0);
-    
-    Method release = class_getInstanceMethod(class, @selector(release));
-    Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
-    class_addMethod(subclass, @selector(release), (IMP)CustomSubclassRelease, method_getTypeEncoding(release));
-    class_addMethod(subclass, @selector(dealloc), (IMP)CustomSubclassDealloc, method_getTypeEncoding(dealloc));
-    
-    objc_registerClassPair(subclass);
-    
-    return subclass;
+    return CFGetTypeID(obj) != CFGetTypeID([MAZeroingWeakRef class]);
+}
+
+static Class CreateCustomSubclass(Class class, id obj)
+{
+    if(MustNotSubclass(class, obj))
+    {
+        CFTypeID typeID = CFGetTypeID(obj);
+        CFRuntimeClass *cfclass = _CFRuntimeGetClassWithTypeID(typeID);
+        
+        if(typeID >= gCFOriginalFinalizesSize)
+        {
+            gCFOriginalFinalizesSize = typeID;
+            gCFOriginalFinalizes = realloc(gCFOriginalFinalizes, gCFOriginalFinalizesSize * sizeof(*gCFOriginalFinalizes));
+        }
+        gCFOriginalFinalizes[typeID] = cfclass->finalize;
+        cfclass->finalize = CustomCFFinalize;
+        return class;
+    }
+    else
+    {
+        NSString *newName = [NSString stringWithFormat: @"%s_MAZeroingWeakRefSubclass", class_getName(class)];
+        const char *newNameC = [newName UTF8String];
+        
+        Class subclass = objc_allocateClassPair(class, newNameC, 0);
+        
+        Method release = class_getInstanceMethod(class, @selector(release));
+        Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
+        class_addMethod(subclass, @selector(release), (IMP)CustomSubclassRelease, method_getTypeEncoding(release));
+        class_addMethod(subclass, @selector(dealloc), (IMP)CustomSubclassDealloc, method_getTypeEncoding(dealloc));
+        
+        objc_registerClassPair(subclass);
+        
+        return subclass;
+    }
 }
 
 static void EnsureCustomSubclass(id obj)
@@ -122,7 +171,7 @@ static void EnsureCustomSubclass(id obj)
         Class subclass = [gCustomSubclassMap objectForKey: class];
         if(!subclass)
         {
-            subclass = CreateCustomSubclass(class);
+            subclass = CreateCustomSubclass(class, obj);
             [gCustomSubclassMap setObject: subclass forKey: class];
             [gCustomSubclasses addObject: subclass];
         }

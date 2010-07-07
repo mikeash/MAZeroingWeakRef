@@ -12,8 +12,8 @@
 #import "MAZeroingWeakRef.h"
 
 
-int main (int argc, const char * argv[]) {
-
+int main (int argc, const char * argv[])
+{
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     
     NSObject *obj = [[NSObject alloc] init];
@@ -31,15 +31,13 @@ int main (int argc, const char * argv[]) {
     NSLog(@"ref2: %@", ref2);
     [ref2 release];
     
-    /*
-    NSString *str = [[NSMutableString alloc] initWithFormat: @"Hello, %@!", @"world"];
-    NSLog(@"str: %@", str);
-    ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
-    NSLog(@"str: %@  ref: %@", str, ref);
-    [str release];
-    NSLog(@"ref: %@", ref);
+    NSMutableArray *array = [[NSMutableArray alloc] init];
+    NSLog(@"array: %@", array);
+    ref = [[MAZeroingWeakRef alloc] initWithTarget: array];
+    NSLog(@"array: %@  ref: %@", array, ref);
+    [array release];
+    NSLog(@"ref: %@  target: %p %@", ref, [ref target], [ref target]);
     [ref release];
-    */
     
     NSLog(@"Done!");
     [pool drain];
