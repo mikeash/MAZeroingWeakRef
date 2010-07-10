@@ -144,7 +144,7 @@ static Class CreateCustomSubclass(Class class, id obj)
         
         if(typeID >= gCFOriginalFinalizesSize)
         {
-            gCFOriginalFinalizesSize = typeID;
+            gCFOriginalFinalizesSize = typeID + 1;
             gCFOriginalFinalizes = realloc(gCFOriginalFinalizes, gCFOriginalFinalizesSize * sizeof(*gCFOriginalFinalizes));
         }
         
