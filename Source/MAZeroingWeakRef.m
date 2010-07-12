@@ -229,12 +229,20 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 - (void)dealloc
 {
     UnregisterRef(self);
+    [_cleanupBlock release];
     [super dealloc];
 }
 
 - (NSString *)description
 {
     return [NSString stringWithFormat: @"<%@: %p -> %@>", [self class], self, [self target]];
+}
+
+- (void)setCleanupBlock: (void (^)(void))block
+{
+    block = [block copy];
+    [_cleanupBlock release];
+    _cleanupBlock = block;
 }
 
 - (id)target
@@ -249,6 +257,8 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 - (void)_zeroTarget
 {
     _target = nil;
+    if(_cleanupBlock)
+        _cleanupBlock();
 }
 
 @end

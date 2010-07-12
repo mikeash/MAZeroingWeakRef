@@ -47,6 +47,14 @@ int main (int argc, const char * argv[])
     NSLog(@"ref: %@  target: %p %@", ref, [ref target], [ref target]);
     [ref release];
     
+    __block BOOL cleanedUp = NO;
+    str = [[NSMutableString alloc] initWithString: @"Test String"];
+    ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
+    [ref setCleanupBlock: ^{ cleanedUp = YES; }];
+    [str release];
+    NSLog(@"ref: %@  cleanedUp: %d", ref, cleanedUp);
+    [ref release];
+    
     NSLog(@"Done!");
     [pool drain];
     sleep(1000);
