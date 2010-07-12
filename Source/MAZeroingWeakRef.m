@@ -257,7 +257,11 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 - (void)_zeroTarget
 {
     if(_cleanupBlock)
+    {
         _cleanupBlock(_target);
+        [_cleanupBlock release];
+        _cleanupBlock = nil;
+    }
     _target = nil;
 }
 
