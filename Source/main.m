@@ -9,8 +9,19 @@
 
 #import <Foundation/Foundation.h>
 
+#import "MANotificationCenterAdditions.h"
 #import "MAZeroingWeakRef.h"
 
+
+@interface NotificationReceiver : NSObject {} @end
+@implementation NotificationReceiver
+
+- (void)gotNote: (NSNotification *)note
+{
+    NSLog(@"%@ got note %@", self, note);
+}
+
+@end
 
 int main (int argc, const char * argv[])
 {
@@ -50,10 +61,17 @@ int main (int argc, const char * argv[])
     __block BOOL cleanedUp = NO;
     str = [[NSMutableString alloc] initWithString: @"Test String"];
     ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
-    [ref setCleanupBlock: ^{ cleanedUp = YES; }];
+    [ref setCleanupBlock: ^(id target) { cleanedUp = YES; }];
     [str release];
     NSLog(@"ref: %@  cleanedUp: %d", ref, cleanedUp);
     [ref release];
+    
+    NotificationReceiver *receiver = [[NotificationReceiver alloc] init];
+    [[NSNotificationCenter defaultCenter] addWeakObserver: receiver selector: @selector(gotNote:) name: @"name" object: @"object"];
+    [[NSNotificationCenter defaultCenter] postNotificationName: @"name" object: @"object"];
+    NSLog(@"releasing receiver");
+    [receiver release];
+    [[NSNotificationCenter defaultCenter] postNotificationName: @"name" object: @"object"];
     
     NSLog(@"Done!");
     [pool drain];

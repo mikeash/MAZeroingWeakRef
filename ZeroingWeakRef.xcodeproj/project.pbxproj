@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C208C96011EBB8F100A8E38D /* MANotificationCenterAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = C208C95F11EBB8F100A8E38D /* MANotificationCenterAdditions.m */; };
 		C25675F111E25C6A00CAB48E /* MAZeroingWeakRef.m in Sources */ = {isa = PBXBuildFile; fileRef = C25675F011E25C6A00CAB48E /* MAZeroingWeakRef.m */; };
 		C2D7540C11E2588600816068 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2D7540B11E2588600816068 /* Foundation.framework */; };
 		C2D7541011E2588600816068 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = C2D7540F11E2588600816068 /* main.m */; };
@@ -25,6 +26,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C208C95E11EBB8F100A8E38D /* MANotificationCenterAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MANotificationCenterAdditions.h; sourceTree = "<group>"; };
+		C208C95F11EBB8F100A8E38D /* MANotificationCenterAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MANotificationCenterAdditions.m; sourceTree = "<group>"; };
 		C25675EF11E25C6A00CAB48E /* MAZeroingWeakRef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAZeroingWeakRef.h; sourceTree = "<group>"; };
 		C25675F011E25C6A00CAB48E /* MAZeroingWeakRef.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAZeroingWeakRef.m; sourceTree = "<group>"; };
 		C2D7540711E2588600816068 /* ZeroingWeakRef */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ZeroingWeakRef; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -61,6 +64,8 @@
 				C2D7540F11E2588600816068 /* main.m */,
 				C25675EF11E25C6A00CAB48E /* MAZeroingWeakRef.h */,
 				C25675F011E25C6A00CAB48E /* MAZeroingWeakRef.m */,
+				C208C95E11EBB8F100A8E38D /* MANotificationCenterAdditions.h */,
+				C208C95F11EBB8F100A8E38D /* MANotificationCenterAdditions.m */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -134,6 +139,7 @@
 			files = (
 				C2D7541011E2588600816068 /* main.m in Sources */,
 				C25675F111E25C6A00CAB48E /* MAZeroingWeakRef.m in Sources */,
+				C208C96011EBB8F100A8E38D /* MANotificationCenterAdditions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

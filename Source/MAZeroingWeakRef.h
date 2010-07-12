@@ -12,7 +12,7 @@
 @interface MAZeroingWeakRef : NSObject
 {
     id _target;
-    void (^_cleanupBlock)(void);
+    void (^_cleanupBlock)(id target);
 }
 
 - (id)initWithTarget: (id)target;
@@ -21,7 +21,7 @@
 // so make it short and sweet!
 // use GCD or something to schedule execution later
 // if you need to do something that may take a while
-- (void)setCleanupBlock: (void (^)(void))block;
+- (void)setCleanupBlock: (void (^)(id target))block;
 
 - (id)target;
 
