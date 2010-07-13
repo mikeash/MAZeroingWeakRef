@@ -121,6 +121,8 @@ static void CustomCFFinalize(CFTypeRef cf)
             NSHashTable *table = objc_getAssociatedObject((id)cf, gRefHashTableKey);
             for(MAZeroingWeakRef *ref in table)
                 [ref _zeroTarget];
+            [table removeAllObjects];
+            
             void (*fptr)(CFTypeRef) = gCFOriginalFinalizes[CFGetTypeID(cf)];
             if(fptr)
                 fptr(cf);
