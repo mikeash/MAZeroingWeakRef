@@ -95,9 +95,9 @@ static Class GetRealSuperclass(id obj)
 
 static void CustomSubclassRelease(id self, SEL _cmd)
 {
+    Class superclass = GetRealSuperclass(self);
+    IMP superRelease = class_getMethodImplementation(superclass, @selector(release));
     WhileLocked(^{
-        Class superclass = GetRealSuperclass(self);
-        IMP superRelease = class_getMethodImplementation(superclass, @selector(release));
         ((void (*)(id, SEL))superRelease)(self, _cmd);
     });
 }
