@@ -15,6 +15,8 @@
     void (^_cleanupBlock)(id target);
 }
 
++ (id)refWithTarget: (id)target;
+
 - (id)initWithTarget: (id)target;
 
 // cleanup block runs while the global ZWR lock is held

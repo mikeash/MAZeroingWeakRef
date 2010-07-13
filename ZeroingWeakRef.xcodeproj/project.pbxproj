@@ -11,6 +11,7 @@
 		C25675F111E25C6A00CAB48E /* MAZeroingWeakRef.m in Sources */ = {isa = PBXBuildFile; fileRef = C25675F011E25C6A00CAB48E /* MAZeroingWeakRef.m */; };
 		C2D7540C11E2588600816068 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2D7540B11E2588600816068 /* Foundation.framework */; };
 		C2D7541011E2588600816068 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = C2D7540F11E2588600816068 /* main.m */; };
+		C2DF1F2611ED2C1300EFC8AE /* MAWeakArray.m in Sources */ = {isa = PBXBuildFile; fileRef = C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -34,6 +35,8 @@
 		C2D7540B11E2588600816068 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		C2D7540F11E2588600816068 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		C2D7541211E2588600816068 /* ZeroingWeakRef_Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ZeroingWeakRef_Prefix.pch; sourceTree = "<group>"; };
+		C2DF1F2411ED2C1300EFC8AE /* MAWeakArray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAWeakArray.h; sourceTree = "<group>"; };
+		C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAWeakArray.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +69,8 @@
 				C25675F011E25C6A00CAB48E /* MAZeroingWeakRef.m */,
 				C208C95E11EBB8F100A8E38D /* MANotificationCenterAdditions.h */,
 				C208C95F11EBB8F100A8E38D /* MANotificationCenterAdditions.m */,
+				C2DF1F2411ED2C1300EFC8AE /* MAWeakArray.h */,
+				C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -140,6 +145,7 @@
 				C2D7541011E2588600816068 /* main.m in Sources */,
 				C25675F111E25C6A00CAB48E /* MAZeroingWeakRef.m in Sources */,
 				C208C96011EBB8F100A8E38D /* MANotificationCenterAdditions.m in Sources */,
+				C2DF1F2611ED2C1300EFC8AE /* MAWeakArray.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -218,6 +218,11 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
     });
 }
 
++ (id)refWithTarget: (id)target
+{
+    return [[[self alloc] initWithTarget: target] autorelease];
+}
+
 - (id)initWithTarget: (id)target
 {
     if((self = [self init]))
