@@ -12,6 +12,7 @@
 		C2D7540C11E2588600816068 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2D7540B11E2588600816068 /* Foundation.framework */; };
 		C2D7541011E2588600816068 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = C2D7540F11E2588600816068 /* main.m */; };
 		C2DF1F2611ED2C1300EFC8AE /* MAWeakArray.m in Sources */ = {isa = PBXBuildFile; fileRef = C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */; };
+		C2DF1F2B11ED2C4700EFC8AE /* MAWeakDictionary.m in Sources */ = {isa = PBXBuildFile; fileRef = C2DF1F2A11ED2C4700EFC8AE /* MAWeakDictionary.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -37,6 +38,8 @@
 		C2D7541211E2588600816068 /* ZeroingWeakRef_Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ZeroingWeakRef_Prefix.pch; sourceTree = "<group>"; };
 		C2DF1F2411ED2C1300EFC8AE /* MAWeakArray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAWeakArray.h; sourceTree = "<group>"; };
 		C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAWeakArray.m; sourceTree = "<group>"; };
+		C2DF1F2911ED2C4700EFC8AE /* MAWeakDictionary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAWeakDictionary.h; sourceTree = "<group>"; };
+		C2DF1F2A11ED2C4700EFC8AE /* MAWeakDictionary.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAWeakDictionary.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +74,8 @@
 				C208C95F11EBB8F100A8E38D /* MANotificationCenterAdditions.m */,
 				C2DF1F2411ED2C1300EFC8AE /* MAWeakArray.h */,
 				C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */,
+				C2DF1F2911ED2C4700EFC8AE /* MAWeakDictionary.h */,
+				C2DF1F2A11ED2C4700EFC8AE /* MAWeakDictionary.m */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -146,6 +151,7 @@
 				C25675F111E25C6A00CAB48E /* MAZeroingWeakRef.m in Sources */,
 				C208C96011EBB8F100A8E38D /* MANotificationCenterAdditions.m in Sources */,
 				C2DF1F2611ED2C1300EFC8AE /* MAWeakArray.m in Sources */,
+				C2DF1F2B11ED2C4700EFC8AE /* MAWeakDictionary.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
