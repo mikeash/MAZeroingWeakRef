@@ -13,6 +13,21 @@
 #import <pthread.h>
 
 
+/*
+ The COREFOUNDATION_HACK_LEVEL macro allows you to control how much horrible CF
+ hackery is enabled. The following levels are defined:
+ 
+ 2 - Full-on hackery allows weak references to CF objects by doing horrible
+ things with the private CF class table.
+ 
+ 1 - Mild hackery allows foolproof identification of CF objects and will assert
+ if trying to make a ZWR to one.
+ 
+ 0 - No hackery, checks for an "NSCF" prefix in the class name to identify CF
+ objects and will assert if trying to make a ZWR to one
+ */
+#define COREFOUNDATION_HACK_LEVEL 2
+
 @interface MAZeroingWeakRef ()
 
 - (void)_zeroTarget;
@@ -21,6 +36,8 @@
 
 
 @implementation MAZeroingWeakRef
+
+#if COREFOUNDATION_HACK_LEVEL >= 2
 
 typedef struct __CFRuntimeClass {	// Version 0 struct
     CFIndex version;
@@ -36,8 +53,18 @@ typedef struct __CFRuntimeClass {	// Version 0 struct
 } CFRuntimeClass;
 
 extern CFRuntimeClass * _CFRuntimeGetClassWithTypeID(CFTypeID typeID);
+
+typedef void (*CFFinalizeFptr)(CFTypeRef);
+static CFFinalizeFptr *gCFOriginalFinalizes;
+static size_t gCFOriginalFinalizesSize;
+
+#endif
+
+#if COREFOUNDATION_HACK_LEVEL >= 1
+
 extern Class *__CFRuntimeObjCClassTable;
 
+#endif
 
 static pthread_mutex_t gMutex;
 
@@ -46,10 +73,6 @@ static void *gRefHashTableKey = &gRefHashTableKeyTarget;
 
 static NSMutableSet *gCustomSubclasses;
 static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their custom subclasses
-
-typedef void (*CFFinalizeFptr)(CFTypeRef);
-static CFFinalizeFptr *gCFOriginalFinalizes;
-static size_t gCFOriginalFinalizesSize;
 
 + (void)initialize
 {
@@ -113,6 +136,8 @@ static void CustomSubclassDealloc(id self, SEL _cmd)
     ((void (*)(id, SEL))superDealloc)(self, _cmd);
 }
 
+#if COREFOUNDATION_HACK_LEVEL >= 2
+
 static void CustomCFFinalize(CFTypeRef cf)
 {
     WhileLocked(^{
@@ -130,17 +155,24 @@ static void CustomCFFinalize(CFTypeRef cf)
     });
 }
 
+#endif
+
 static BOOL IsTollFreeBridged(Class class, id obj)
 {
+#if COREFOUNDATION_HACK_LEVEL >= 1
     CFTypeID typeID = CFGetTypeID(obj);
     Class tfbClass = __CFRuntimeObjCClassTable[typeID];
     return class == tfbClass;
+#else
+    return [NSStringFromClass(class) hasPrefix: @"NSCF"];
+#endif
 }
 
 static Class CreateCustomSubclass(Class class, id obj)
 {
     if(IsTollFreeBridged(class, obj))
     {
+#if COREFOUNDATION_HACK_LEVEL >= 2
         CFTypeID typeID = CFGetTypeID(obj);
         CFRuntimeClass *cfclass = _CFRuntimeGetClassWithTypeID(typeID);
         
@@ -153,7 +185,9 @@ static Class CreateCustomSubclass(Class class, id obj)
         do {
             gCFOriginalFinalizes[typeID] = cfclass->finalize;
         } while(!OSAtomicCompareAndSwapPtrBarrier(gCFOriginalFinalizes[typeID], CustomCFFinalize, (void *)&cfclass->finalize));
-            
+#else
+        NSCAssert(0, @"Cannot create zeroing weak reference to object of type %@ with COREFOUNDATION_HACK_LEVEL set to %d", class, COREFOUNDATION_HACK_LEVEL);
+#endif
         return class;
     }
     else
