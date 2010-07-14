@@ -68,8 +68,7 @@ extern Class *__CFRuntimeObjCClassTable;
 
 static pthread_mutex_t gMutex;
 
-static char gRefHashTableKeyTarget;
-static void *gRefHashTableKey = &gRefHashTableKeyTarget;
+static void *gRefHashTableKey = &gRefHashTableKey;
 
 static NSMutableSet *gCustomSubclasses;
 static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their custom subclasses
