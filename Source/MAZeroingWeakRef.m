@@ -107,11 +107,7 @@ static Class GetCustomSubclass(id obj)
 static Class GetRealSuperclass(id obj)
 {
     Class class = GetCustomSubclass(obj);
-    if(!class)
-    {
-        NSLog(@"Coudn't find ZeroingWeakRef subclass in hierarchy starting from %@, should never happen, bailing out", object_getClass(obj));
-        abort();
-    }
+    NSCAssert(class, @"Coudn't find ZeroingWeakRef subclass in hierarchy starting from %@, should never happen", object_getClass(obj));
     return class_getSuperclass(class);
 }
 
