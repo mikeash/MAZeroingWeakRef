@@ -47,7 +47,10 @@
 
 - (NSEnumerator *)keyEnumerator
 {
-    return [_dict keyEnumerator];
+    // enumerate over a copy because -objectForKey: mutates
+    // which could cause an exception in code that should
+    // appear to be correct
+    return [[_dict allKeys] objectEnumerator];
 }
 
 - (void)removeObjectForKey: (id)aKey
