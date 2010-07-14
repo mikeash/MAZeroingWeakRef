@@ -11,6 +11,8 @@
 
 #import "MANotificationCenterAdditions.h"
 #import "MAZeroingWeakRef.h"
+#import "MAWeakArray.h"
+#import "MAWeakDictionary.h"
 
 
 @interface NotificationReceiver : NSObject {} @end
@@ -83,6 +85,35 @@ int main (int argc, const char * argv[])
         [[NSNotificationCenter defaultCenter] postNotificationName: @"name" object: @"object"];
     }
     
+    {
+        NSString *str1 = [[NSMutableString alloc] initWithString: @"Test String 1"];
+        NSString *str2 = [[NSMutableString alloc] initWithString: @"Test String 2"];
+        NSString *str3 = [[NSMutableString alloc] initWithString: @"Test String 3"];
+        
+        MAWeakArray *array = [[MAWeakArray alloc] init];
+        [array addObject: str1];
+        [array addObject: str2];
+        [array addObject: str3];
+        
+        MAWeakDictionary *dict = [[MAWeakDictionary alloc] init];
+        [dict setObject: str1 forKey: @"str1"];
+        [dict setObject: str2 forKey: @"str2"];
+        [dict setObject: str3 forKey: @"str3"];
+        
+        NSLog(@"array: %@", array);
+        NSLog(@"dict: %@", dict);
+        
+        [str2 release];
+        
+        NSLog(@"array: %@", array);
+        NSLog(@"dict: %@", dict);
+        
+        [str1 release];
+        [str3 release];
+        
+        NSLog(@"array: %@", array);
+        NSLog(@"dict: %@", dict);
+    }
     
     NSLog(@"Done!");
     [pool drain];
