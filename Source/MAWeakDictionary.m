@@ -3,7 +3,6 @@
 //  ZeroingWeakRef
 //
 //  Created by Mike Ash on 7/13/10.
-//  Copyright 2010 Rogue Amoeba Software, LLC. All rights reserved.
 //
 
 #import "MAWeakDictionary.h"

@@ -3,7 +3,6 @@
 //  ZeroingWeakRef
 //
 //  Created by Michael Ash on 7/12/10.
-//  Copyright 2010 Michael Ash. All rights reserved.
 //
 
 #import "MANotificationCenterAdditions.h"
