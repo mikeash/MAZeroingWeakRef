@@ -75,6 +75,17 @@ static void TestBasic(void)
     [ref release];
 }
 
+static void TestRefDestroyedFirst(void)
+{
+    NSObject *obj = [[NSObject alloc] init];
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+    WithPool(^{
+        TEST_ASSERT([ref target]);
+        [ref release];
+    });
+    [obj release];
+}
+
 static void TestDoubleRef(void)
 {
     NSObject *obj = [[NSObject alloc] init];
@@ -228,6 +239,7 @@ int main(int argc, const char * argv[])
 {
     WithPool(^{
         TEST(TestBasic);
+        TEST(TestRefDestroyedFirst);
         TEST(TestDoubleRef);
         TEST(TestRefToRef);
         TEST(TestNSArrayTarget);
