@@ -72,6 +72,7 @@ static void TestBasic(void)
         [obj release];
     });
     TEST_ASSERT([ref target] == nil, @"ref target still live after object destroyed: %@", ref);
+    [ref release];
 }
 
 static void TestDoubleRef(void)
@@ -86,6 +87,8 @@ static void TestDoubleRef(void)
     });
     TEST_ASSERT([ref1 target] == nil, @"ref target still live after object destroyed: %@", ref1);
     TEST_ASSERT([ref2 target] == nil, @"ref target still live after object destroyed: %@", ref2);
+    [ref1 release];
+    [ref2 release];
 }
 
 static void TestRefToRef(void)
@@ -122,6 +125,7 @@ static void TestNSArrayTarget(void)
         [array release];
     });
     TEST_ASSERT([ref target] == nil, @"ref target still live after object destroyed: %@", ref);
+    [ref release];
 }
 
 static void TestNSStringTarget(void)
@@ -189,6 +193,7 @@ static void TestWeakArray(void)
     TEST_ASSERT([array objectAtIndex: 0] == nil);
     TEST_ASSERT([array objectAtIndex: 1] == nil);
     TEST_ASSERT([array objectAtIndex: 2] == nil);
+    [array release];
 }
 
 static void TestWeakDictionary(void)
@@ -216,6 +221,7 @@ static void TestWeakDictionary(void)
     TEST_ASSERT([dict objectForKey: @"str1"] == nil);
     TEST_ASSERT([dict objectForKey: @"str2"] == nil);
     TEST_ASSERT([dict objectForKey: @"str3"] == nil);
+    [dict release];
 }
     
 int main(int argc, const char * argv[])
