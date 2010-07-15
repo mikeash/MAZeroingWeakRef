@@ -15,110 +15,230 @@
 #import "MAWeakDictionary.h"
 
 
-@interface NotificationReceiver : NSObject {} @end
+@interface NotificationReceiver : NSObject
+{
+    int *_noteCounter;
+}
+
+- (id)initWithCounter: (int *)counter;
+
+@end
+
 @implementation NotificationReceiver
+
+- (id)initWithCounter: (int *)counter
+{
+    _noteCounter = counter;
+    return self;
+}
 
 - (void)gotNote: (NSNotification *)note
 {
-    NSLog(@"%@ got note %@", self, note);
+    (*_noteCounter)++;
 }
 
 @end
 
-int main (int argc, const char * argv[])
+static void WithPool(void (^block)(void))
 {
-    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-    
-    {
-        NSObject *obj = [[NSObject alloc] init];
-        NSLog(@"obj is %@", obj);
-        NSLog(@"Creating weak ref");
-        MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: obj];
-        MAZeroingWeakRef *ref2 = [[MAZeroingWeakRef alloc] initWithTarget: ref];
-        
-        [ref target];
-        NSLog(@"obj: %@  ref: %@  ref2: %@", obj, ref, ref2);
-        NSLog(@"Releasing obj");
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    block();
+    [pool release];
+}
+
+static int gFailureCount;
+
+#define TEST(func) WithPool(^{ \
+    int failureCount = gFailureCount; \
+    NSLog(@"Testing %s", #func); \
+    func(); \
+    NSLog(@"%s: %s", #func, failureCount == gFailureCount ? "SUCCESS" : "FAILED"); \
+})
+
+#define TEST_ASSERT(cond, ...) do { \
+    if(!(cond)) { \
+        gFailureCount++; \
+        NSString *message = [NSString stringWithFormat: @"" __VA_ARGS__]; \
+        NSLog(@"%s:%d: assertion failed: %s %@", __func__, __LINE__, #cond, message); \
+    } \
+} while(0)
+
+static void TestBasic(void)
+{
+    NSObject *obj = [[NSObject alloc] init];
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+    WithPool(^{
+        TEST_ASSERT([ref target]);
         [obj release];
-        NSLog(@"ref: %@  ref2: %@", ref, ref2);
-        [ref release];
-        NSLog(@"ref2: %@", ref2);
-        [ref2 release];
+    });
+    TEST_ASSERT([ref target] == nil, @"ref target still live after object destroyed: %@", ref);
+}
+
+static void TestDoubleRef(void)
+{
+    NSObject *obj = [[NSObject alloc] init];
+    MAZeroingWeakRef *ref1 = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+    MAZeroingWeakRef *ref2 = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+    WithPool(^{
+        TEST_ASSERT([ref1 target]);
+        TEST_ASSERT([ref2 target]);
+        [obj release];
+    });
+    TEST_ASSERT([ref1 target] == nil, @"ref target still live after object destroyed: %@", ref1);
+    TEST_ASSERT([ref2 target] == nil, @"ref target still live after object destroyed: %@", ref2);
+}
+
+static void TestRefToRef(void)
+{
+    NSObject *obj = [[NSObject alloc] init];
+    MAZeroingWeakRef *ref1 = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+    MAZeroingWeakRef *ref2 = [[MAZeroingWeakRef alloc] initWithTarget: ref1];
+    WithPool(^{
+        TEST_ASSERT([ref1 target]);
+        TEST_ASSERT([ref2 target]);
+        [obj release];
+    });
+    WithPool(^{
+        TEST_ASSERT([ref1 target] == nil, @"ref target still live after object destroyed: %@", ref1);
+        TEST_ASSERT([ref2 target], @"ref target dead even though target ref still alive: %@", ref2);
+        [ref1 release];
+    });
+    TEST_ASSERT([ref2 target] == nil, @"ref target still live after object destroyed: %@", ref2);
+    [ref2 release];
+}
+
+static void TestNSArrayTarget(void)
+{
+    if(![MAZeroingWeakRef canRefCoreFoundationObjects])
+    {
+        NSLog(@"MAZeroingWeakRef can't reference CF objects, not testing them");
+        return;
     }
     
-    {
-        NSMutableArray *array = [[NSMutableArray alloc] init];
-        NSLog(@"array: %@", array);
-        MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: array];
-        NSLog(@"array: %@  ref: %@", array, ref);
+    NSMutableArray *array = [[NSMutableArray alloc] init];
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: array];
+    WithPool(^{
+        TEST_ASSERT([ref target]);
         [array release];
-        NSLog(@"ref: %@  target: %p %@", ref, [ref target], [ref target]);
-        [ref release];
+    });
+    TEST_ASSERT([ref target] == nil, @"ref target still live after object destroyed: %@", ref);
+}
+
+static void TestNSStringTarget(void)
+{
+    if(![MAZeroingWeakRef canRefCoreFoundationObjects])
+    {
+        NSLog(@"MAZeroingWeakRef can't reference CF objects, not testing them");
+        return;
     }
     
-    {
-        NSString *str = [[NSMutableString alloc] initWithString: @"Test String"];
-        NSLog(@"str: %@", str);
-        MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
-        NSLog(@"str: %@  ref: %@", str, ref);
+    NSString *str = [[NSMutableString alloc] initWithString: @"Test String"];
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
+    WithPool(^{
+        TEST_ASSERT([ref target]);
         [str release];
-        NSLog(@"ref: %@  target: %p %@", ref, [ref target], [ref target]);
-        [ref release];
-    }
+    });
+    [ref release];
+}
+
+static void TestCleanup(void)
+{
+    __block BOOL cleanedUp = NO;
+    NSMutableString *str = [[NSMutableString alloc] initWithString: @"Test String"];
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
+    [ref setCleanupBlock: ^(id target) { cleanedUp = YES; }];
+    [str release];
+    TEST_ASSERT(cleanedUp);
+    [ref release];
+}
+
+static void TestNotification(void)
+{
+    int notificationCounter = 0;
+    NotificationReceiver *receiver = [[NotificationReceiver alloc] initWithCounter: &notificationCounter];
+    [[NSNotificationCenter defaultCenter] addWeakObserver: receiver selector: @selector(gotNote:) name: @"name" object: @"object"];
+    [[NSNotificationCenter defaultCenter] postNotificationName: @"name" object: @"object"];
+    TEST_ASSERT(notificationCounter == 1);
+    [receiver release];
+    [[NSNotificationCenter defaultCenter] postNotificationName: @"name" object: @"object"];
+    TEST_ASSERT(notificationCounter == 1);
+}
+
+static void TestWeakArray(void)
+{
+    NSString *str1 = [[NSMutableString alloc] initWithString: @"Test String 1"];
+    NSString *str2 = [[NSMutableString alloc] initWithString: @"Test String 2"];
+    NSString *str3 = [[NSMutableString alloc] initWithString: @"Test String 3"];
     
-    {
-        __block BOOL cleanedUp = NO;
-        NSMutableString *str = [[NSMutableString alloc] initWithString: @"Test String"];
-        MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
-        [ref setCleanupBlock: ^(id target) { cleanedUp = YES; }];
-        [str release];
-        NSLog(@"ref: %@  cleanedUp: %d", ref, cleanedUp);
-        [ref release];
-    }
+    MAWeakArray *array = [[MAWeakArray alloc] init];
+    [array addObject: str1];
+    [array addObject: str2];
+    [array addObject: str3];
     
-    {
-        NotificationReceiver *receiver = [[NotificationReceiver alloc] init];
-        [[NSNotificationCenter defaultCenter] addWeakObserver: receiver selector: @selector(gotNote:) name: @"name" object: @"object"];
-        [[NSNotificationCenter defaultCenter] postNotificationName: @"name" object: @"object"];
-        NSLog(@"releasing receiver");
-        [receiver release];
-        [[NSNotificationCenter defaultCenter] postNotificationName: @"name" object: @"object"];
-    }
+    [str2 release];
     
-    {
-        NSString *str1 = [[NSMutableString alloc] initWithString: @"Test String 1"];
-        NSString *str2 = [[NSMutableString alloc] initWithString: @"Test String 2"];
-        NSString *str3 = [[NSMutableString alloc] initWithString: @"Test String 3"];
-        
-        MAWeakArray *array = [[MAWeakArray alloc] init];
-        [array addObject: str1];
-        [array addObject: str2];
-        [array addObject: str3];
-        
-        MAWeakDictionary *dict = [[MAWeakDictionary alloc] init];
-        [dict setObject: str1 forKey: @"str1"];
-        [dict setObject: str2 forKey: @"str2"];
-        [dict setObject: str3 forKey: @"str3"];
-        
-        NSLog(@"array: %@", array);
-        NSLog(@"dict: %@", dict);
-        
-        [str2 release];
-        
-        NSLog(@"array: %@", array);
-        NSLog(@"dict: %@", dict);
-        
-        [str1 release];
-        [str3 release];
-        
-        NSLog(@"array: %@", array);
-        NSLog(@"dict: %@", dict);
-    }
+    WithPool(^{
+        TEST_ASSERT([array objectAtIndex: 0]);
+        TEST_ASSERT([array objectAtIndex: 1] == nil);
+        TEST_ASSERT([array objectAtIndex: 2]);
+    });
     
-    NSLog(@"Done!");
-    [pool drain];
+    [str1 release];
+    [str3 release];
+    
+    TEST_ASSERT([array objectAtIndex: 0] == nil);
+    TEST_ASSERT([array objectAtIndex: 1] == nil);
+    TEST_ASSERT([array objectAtIndex: 2] == nil);
+}
+
+static void TestWeakDictionary(void)
+{
+    NSString *str1 = [[NSMutableString alloc] initWithString: @"Test String 1"];
+    NSString *str2 = [[NSMutableString alloc] initWithString: @"Test String 2"];
+    NSString *str3 = [[NSMutableString alloc] initWithString: @"Test String 3"];
+    
+    MAWeakDictionary *dict = [[MAWeakDictionary alloc] init];
+    [dict setObject: str1 forKey: @"str1"];
+    [dict setObject: str2 forKey: @"str2"];
+    [dict setObject: str3 forKey: @"str3"];
+    
+    [str2 release];
+    
+    WithPool(^{
+        TEST_ASSERT([dict objectForKey: @"str1"]);
+        TEST_ASSERT([dict objectForKey: @"str2"] == nil);
+        TEST_ASSERT([dict objectForKey: @"str3"]);
+    });
+    
+    [str1 release];
+    [str3 release];
+    
+    TEST_ASSERT([dict objectForKey: @"str1"] == nil);
+    TEST_ASSERT([dict objectForKey: @"str2"] == nil);
+    TEST_ASSERT([dict objectForKey: @"str3"] == nil);
+}
+    
+int main(int argc, const char * argv[])
+{
+    WithPool(^{
+        TEST(TestBasic);
+        TEST(TestDoubleRef);
+        TEST(TestRefToRef);
+        TEST(TestNSArrayTarget);
+        TEST(TestNSStringTarget);
+        TEST(TestCleanup);
+        TEST(TestNotification);
+        TEST(TestWeakArray);
+        TEST(TestWeakDictionary);
+        
+        NSString *message;
+        if(gFailureCount)
+            message = [NSString stringWithFormat: @"FAILED: %d total assertion failure%s", gFailureCount, gFailureCount > 1 ? "s" : ""];
+        else
+            message = @"SUCCESS";
+        NSLog(@"Tests complete: %@", message);
+    });
     sleep(1000);
-    
     return 0;
 }
 
