@@ -15,6 +15,8 @@
     void (^_cleanupBlock)(id target);
 }
 
++ (BOOL)canRefCoreFoundationObjects;
+
 + (id)refWithTarget: (id)target;
 
 - (id)initWithTarget: (id)target;

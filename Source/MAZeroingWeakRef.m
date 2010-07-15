@@ -247,6 +247,11 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
     });
 }
 
++ (BOOL)canRefCoreFoundationObjects
+{
+    return COREFOUNDATION_HACK_LEVEL >= 2;
+}
+
 + (id)refWithTarget: (id)target
 {
     return [[[self alloc] initWithTarget: target] autorelease];
