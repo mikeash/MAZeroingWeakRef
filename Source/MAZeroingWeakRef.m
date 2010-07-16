@@ -95,6 +95,31 @@ static void WhileLocked(void (^block)(void))
     pthread_mutex_unlock(&gMutex);
 }
 
+static void AddWeakRefToObject(id obj, MAZeroingWeakRef *ref)
+{
+    NSHashTable *table = objc_getAssociatedObject(obj, gRefHashTableKey);
+    if(!table)
+    {
+        table = [NSHashTable hashTableWithWeakObjects];
+        objc_setAssociatedObject(obj, gRefHashTableKey, table, OBJC_ASSOCIATION_RETAIN);
+    }
+    [table addObject: ref];
+}
+
+static void RemoveWeakRefFromObject(id obj, MAZeroingWeakRef *ref)
+{
+    NSHashTable *table = objc_getAssociatedObject(obj, gRefHashTableKey);
+    [table removeObject: ref];
+}
+
+static void ClearWeakRefsForObject(id obj)
+{
+    NSHashTable *table = objc_getAssociatedObject(obj, gRefHashTableKey);
+    for(MAZeroingWeakRef *ref in table)
+        [ref _zeroTarget];
+    objc_setAssociatedObject(obj, gRefHashTableKey, nil, OBJC_ASSOCIATION_RETAIN);
+}
+
 static Class GetCustomSubclass(id obj)
 {
     Class class = object_getClass(obj);
@@ -121,10 +146,7 @@ static void CustomSubclassRelease(id self, SEL _cmd)
 
 static void CustomSubclassDealloc(id self, SEL _cmd)
 {
-    NSHashTable *table = objc_getAssociatedObject(self, gRefHashTableKey);
-    for(MAZeroingWeakRef *ref in table)
-        [ref _zeroTarget];
-    
+    ClearWeakRefsForObject(self);
     Class superclass = GetRealSuperclass(self);
     IMP superDealloc = class_getMethodImplementation(superclass, @selector(dealloc));
     ((void (*)(id, SEL))superDealloc)(self, _cmd);
@@ -137,11 +159,7 @@ static void CustomCFFinalize(CFTypeRef cf)
     WhileLocked(^{
         if(CFGetRetainCount(cf) == 1)
         {
-            NSHashTable *table = objc_getAssociatedObject((id)cf, gRefHashTableKey);
-            for(MAZeroingWeakRef *ref in table)
-                [ref _zeroTarget];
-            [table removeAllObjects];
-            
+            ClearWeakRefsForObject((id)cf);
             void (*fptr)(CFTypeRef) = gCFOriginalFinalizes[CFGetTypeID(cf)];
             if(fptr)
                 fptr(cf);
@@ -222,14 +240,7 @@ static void RegisterRef(MAZeroingWeakRef *ref, id target)
 {
     WhileLocked(^{
         EnsureCustomSubclass(target);
-        
-        NSHashTable *table = objc_getAssociatedObject(target, gRefHashTableKey);
-        if(!table)
-        {
-            table = [NSHashTable hashTableWithWeakObjects];
-            objc_setAssociatedObject(target, gRefHashTableKey, table, OBJC_ASSOCIATION_RETAIN);
-        }
-        [table addObject: ref];
+        AddWeakRefToObject(target, ref);
     });
 }
 
@@ -239,10 +250,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
         id target = ref->_target;
         
         if(target)
-        {
-            NSHashTable *table = objc_getAssociatedObject(target, gRefHashTableKey);
-            [table removeObject: ref];
-        }
+            RemoveWeakRefFromObject(target, ref);
     });
 }
 
