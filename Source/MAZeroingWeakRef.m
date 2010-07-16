@@ -67,7 +67,7 @@ extern Class *__CFRuntimeObjCClassTable;
 
 static pthread_mutex_t gMutex;
 
-static void *gRefHashTableKey = &gRefHashTableKey;
+static CFMutableDictionaryRef gObjectWeakRefsMap; // maps (non-retained) objects to CFMutableSetRefs containing weak refs
 
 static NSMutableSet *gCustomSubclasses;
 static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their custom subclasses
@@ -83,6 +83,7 @@ static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their
         pthread_mutex_init(&gMutex, &mutexattr);
         pthread_mutexattr_destroy(&mutexattr);
         
+        gObjectWeakRefsMap = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
         gCustomSubclasses = [[NSMutableSet alloc] init];
         gCustomSubclassMap = [[NSMutableDictionary alloc] init];
     }
@@ -97,27 +98,27 @@ static void WhileLocked(void (^block)(void))
 
 static void AddWeakRefToObject(id obj, MAZeroingWeakRef *ref)
 {
-    NSHashTable *table = objc_getAssociatedObject(obj, gRefHashTableKey);
-    if(!table)
+    CFMutableSetRef set = (void *)CFDictionaryGetValue(gObjectWeakRefsMap, obj);
+    if(!set)
     {
-        table = [NSHashTable hashTableWithWeakObjects];
-        objc_setAssociatedObject(obj, gRefHashTableKey, table, OBJC_ASSOCIATION_RETAIN);
+        set = CFSetCreateMutable(NULL, 0, NULL);
+        CFDictionarySetValue(gObjectWeakRefsMap, obj, set);
+        CFRelease(set);
     }
-    [table addObject: ref];
+    CFSetAddValue(set, ref);
 }
 
 static void RemoveWeakRefFromObject(id obj, MAZeroingWeakRef *ref)
 {
-    NSHashTable *table = objc_getAssociatedObject(obj, gRefHashTableKey);
-    [table removeObject: ref];
+    CFMutableSetRef set = (void *)CFDictionaryGetValue(gObjectWeakRefsMap, obj);
+    CFSetRemoveValue(set, ref);
 }
 
 static void ClearWeakRefsForObject(id obj)
 {
-    NSHashTable *table = objc_getAssociatedObject(obj, gRefHashTableKey);
-    for(MAZeroingWeakRef *ref in table)
-        [ref _zeroTarget];
-    objc_setAssociatedObject(obj, gRefHashTableKey, nil, OBJC_ASSOCIATION_RETAIN);
+    CFMutableSetRef set = (void *)CFDictionaryGetValue(gObjectWeakRefsMap, obj);
+    [(NSSet *)set makeObjectsPerformSelector: @selector(_zeroTarget)];
+    CFDictionaryRemoveValue(gObjectWeakRefsMap, obj);
 }
 
 static Class GetCustomSubclass(id obj)
