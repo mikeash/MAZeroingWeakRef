@@ -11,7 +11,9 @@
 @interface MAZeroingWeakRef : NSObject
 {
     id _target;
+#if NS_BLOCKS_AVAILABLE
     void (^_cleanupBlock)(id target);
+#endif
 }
 
 + (BOOL)canRefCoreFoundationObjects;
@@ -20,6 +22,7 @@
 
 - (id)initWithTarget: (id)target;
 
+#if NS_BLOCKS_AVAILABLE
 // cleanup block runs while the global ZWR lock is held
 // so make it short and sweet!
 // use GCD or something to schedule execution later
@@ -30,6 +33,7 @@
 // is passed in as a parameter
 // note that you must not resurrect the target at this point!
 - (void)setCleanupBlock: (void (^)(id target))block;
+#endif
 
 - (id)target;
 
