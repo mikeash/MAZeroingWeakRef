@@ -10,6 +10,7 @@
 #import <Foundation/Foundation.h>
 
 #import "MANotificationCenterAdditions.h"
+#import "MAZeroingWeakProxy.h"
 #import "MAZeroingWeakRef.h"
 #import "MAWeakArray.h"
 #import "MAWeakDictionary.h"
@@ -234,6 +235,27 @@ static void TestWeakDictionary(void)
     TEST_ASSERT([dict objectForKey: @"str3"] == nil);
     [dict release];
 }
+
+static void TestWeakProxy(void)
+{
+    NSMutableString *str = [[NSMutableString alloc] init];
+    NSMutableString *proxy = [[MAZeroingWeakProxy alloc] initWithTarget: str];
+    
+    WithPool(^{
+        TEST_ASSERT([proxy isEqual: @""]);
+        [proxy appendString: @"Hello, world!"];
+        TEST_ASSERT([proxy isEqual: @"Hello, world!"]);
+        TEST_ASSERT([proxy length] == [@"Hello, world!" length]);
+        [proxy deleteCharactersInRange: NSMakeRange(0, 7)];
+        TEST_ASSERT([proxy isEqual: @"world!"]);
+    });
+    
+    [str release];
+    
+    TEST_ASSERT([proxy length] == 0);
+    TEST_ASSERT([(id)proxy zeroingProxyTarget] == nil);
+    [proxy release];
+}
     
 int main(int argc, const char * argv[])
 {
@@ -248,6 +270,7 @@ int main(int argc, const char * argv[])
         TEST(TestNotification);
         TEST(TestWeakArray);
         TEST(TestWeakDictionary);
+        TEST(TestWeakProxy);
         
         NSString *message;
         if(gFailureCount)
