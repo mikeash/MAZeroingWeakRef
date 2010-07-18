@@ -76,7 +76,6 @@ static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their
 {
     if(self == [MAZeroingWeakRef class])
     {
-        CFStringCreateMutable(NULL, 0);
         pthread_mutexattr_t mutexattr;
         pthread_mutexattr_init(&mutexattr);
         pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE);
