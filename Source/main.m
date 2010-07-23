@@ -49,12 +49,17 @@ static void WithPool(void (^block)(void))
 
 static int gFailureCount;
 
-#define TEST(func) WithPool(^{ \
-    int failureCount = gFailureCount; \
-    NSLog(@"Testing %s", #func); \
-    func(); \
-    NSLog(@"%s: %s", #func, failureCount == gFailureCount ? "SUCCESS" : "FAILED"); \
-})
+void Test(void (*func)(void), const char *name)
+{
+    WithPool(^{
+        int failureCount = gFailureCount;
+        NSLog(@"Testing %s", name);
+        func();
+        NSLog(@"%s: %s", name, failureCount == gFailureCount ? "SUCCESS" : "FAILED");
+    });
+}
+
+#define TEST(func) Test(func, #func)
 
 #define TEST_ASSERT(cond, ...) do { \
     if(!(cond)) { \
