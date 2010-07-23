@@ -261,7 +261,31 @@ static void TestWeakProxy(void)
     TEST_ASSERT([(id)proxy zeroingProxyTarget] == nil);
     [proxy release];
 }
-    
+
+static void TestCleanupBlockReleasingZWR(void)
+{
+    NSObject *obj = [[NSObject alloc] init];
+    WithPool(^{
+        __block MAZeroingWeakRef *ref1 = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+        __block MAZeroingWeakRef *ref2 = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+        __block MAZeroingWeakRef *ref3 = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+        
+        id cleanupBlock = ^{
+            [ref1 release];
+            ref1 = nil;
+            [ref2 release];
+            ref2 = nil;
+            [ref3 release];
+            ref3 = nil;
+        };
+        
+        [ref1 setCleanupBlock: cleanupBlock];
+        [ref2 setCleanupBlock: cleanupBlock];
+        [ref3 setCleanupBlock: cleanupBlock];
+    });
+    [obj release];
+}
+
 int main(int argc, const char * argv[])
 {
     WithPool(^{
@@ -276,6 +300,7 @@ int main(int argc, const char * argv[])
         TEST(TestWeakArray);
         TEST(TestWeakDictionary);
         TEST(TestWeakProxy);
+        TEST(TestCleanupBlockReleasingZWR);
         
         NSString *message;
         if(gFailureCount)

@@ -125,7 +125,9 @@ static void RemoveWeakRefFromObject(id obj, MAZeroingWeakRef *ref)
 static void ClearWeakRefsForObject(id obj)
 {
     CFMutableSetRef set = (void *)CFDictionaryGetValue(gObjectWeakRefsMap, obj);
-    [(NSSet *)set makeObjectsPerformSelector: @selector(_zeroTarget)];
+    NSSet *setCopy = [[NSSet alloc] initWithSet: (NSSet *)set];
+    [setCopy makeObjectsPerformSelector: @selector(_zeroTarget)];
+    [setCopy release];
     CFDictionaryRemoveValue(gObjectWeakRefsMap, obj);
 }
 
