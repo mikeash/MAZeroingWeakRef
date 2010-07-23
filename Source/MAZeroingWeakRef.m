@@ -88,12 +88,21 @@ static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their
     }
 }
 
+#if NS_BLOCKS_AVAILABLE
 static void WhileLocked(void (^block)(void))
 {
     pthread_mutex_lock(&gMutex);
     block();
     pthread_mutex_unlock(&gMutex);
 }
+#define WhileLocked(block) WhileLocked(^block)
+#else
+#define WhileLocked(block) do { \
+        pthread_mutex_lock(&gMutex); \
+        block \
+        pthread_mutex_unlock(&gMutex); \
+    } while(0)
+#endif
 
 static void AddWeakRefToObject(id obj, MAZeroingWeakRef *ref)
 {
@@ -139,7 +148,7 @@ static void CustomSubclassRelease(id self, SEL _cmd)
 {
     Class superclass = GetRealSuperclass(self);
     IMP superRelease = class_getMethodImplementation(superclass, @selector(release));
-    WhileLocked(^{
+    WhileLocked({
         ((void (*)(id, SEL))superRelease)(self, _cmd);
     });
 }
@@ -156,7 +165,7 @@ static void CustomSubclassDealloc(id self, SEL _cmd)
 
 static void CustomCFFinalize(CFTypeRef cf)
 {
-    WhileLocked(^{
+    WhileLocked({
         if(CFGetRetainCount(cf) == 1)
         {
             ClearWeakRefsForObject((id)cf);
@@ -238,7 +247,7 @@ static void EnsureCustomSubclass(id obj)
 
 static void RegisterRef(MAZeroingWeakRef *ref, id target)
 {
-    WhileLocked(^{
+    WhileLocked({
         EnsureCustomSubclass(target);
         AddWeakRefToObject(target, ref);
     });
@@ -246,7 +255,7 @@ static void RegisterRef(MAZeroingWeakRef *ref, id target)
 
 static void UnregisterRef(MAZeroingWeakRef *ref)
 {
-    WhileLocked(^{
+    WhileLocked({
         id target = ref->_target;
         
         if(target)
@@ -300,7 +309,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 - (id)target
 {
     __block id ret;
-    WhileLocked(^{
+    WhileLocked({
         ret = [_target retain];
     });
     return [ret autorelease];
