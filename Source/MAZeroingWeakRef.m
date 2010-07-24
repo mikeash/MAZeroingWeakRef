@@ -88,7 +88,8 @@ static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their
     }
 }
 
-#if NS_BLOCKS_AVAILABLE
+#if USE_BLOCKS_BASED_LOCKING
+#define BLOCK_QUALIFIER __block
 static void WhileLocked(void (^block)(void))
 {
     pthread_mutex_lock(&gMutex);
@@ -97,6 +98,7 @@ static void WhileLocked(void (^block)(void))
 }
 #define WhileLocked(block) WhileLocked(^block)
 #else
+#define BLOCK_QUALIFIER
 #define WhileLocked(block) do { \
         pthread_mutex_lock(&gMutex); \
         block \
@@ -310,7 +312,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (id)target
 {
-    __block id ret;
+    BLOCK_QUALIFIER id ret;
     WhileLocked({
         ret = [_target retain];
     });
