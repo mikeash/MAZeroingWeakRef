@@ -127,10 +127,13 @@ static void RemoveWeakRefFromObject(id obj, MAZeroingWeakRef *ref)
 static void ClearWeakRefsForObject(id obj)
 {
     CFMutableSetRef set = (void *)CFDictionaryGetValue(gObjectWeakRefsMap, obj);
-    NSSet *setCopy = [[NSSet alloc] initWithSet: (NSSet *)set];
-    [setCopy makeObjectsPerformSelector: @selector(_zeroTarget)];
-    [setCopy release];
-    CFDictionaryRemoveValue(gObjectWeakRefsMap, obj);
+    if(set)
+    {
+        NSSet *setCopy = [[NSSet alloc] initWithSet: (NSSet *)set];
+        [setCopy makeObjectsPerformSelector: @selector(_zeroTarget)];
+        [setCopy release];
+        CFDictionaryRemoveValue(gObjectWeakRefsMap, obj);
+    }
 }
 
 static Class GetCustomSubclass(id obj)
