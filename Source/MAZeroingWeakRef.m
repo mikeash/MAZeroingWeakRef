@@ -7,8 +7,11 @@
 
 #import "MAZeroingWeakRef.h"
 
+#import <dlfcn.h>
 #import <libkern/OSAtomic.h>
 #import <objc/runtime.h>
+#import <mach/mach.h>
+#import <mach/port.h>
 #import <pthread.h>
 
 
@@ -16,8 +19,13 @@
  The COREFOUNDATION_HACK_LEVEL macro allows you to control how much horrible CF
  hackery is enabled. The following levels are defined:
  
- 2 - Full-on hackery allows weak references to CF objects by doing horrible
- things with the private CF class table.
+ 3 - Completely insane hackery allows weak references to CF objects, deallocates
+ them asynchronously in another thread to eliminate resurrection-related race
+ condition and crash.
+ 
+ 2 - Full hackery allows weak references to CF objects by doing horrible
+ things with the private CF class table. Extremely small risk of resurrection-
+ related race condition leading to a crash.
  
  1 - Mild hackery allows foolproof identification of CF objects and will assert
  if trying to make a ZWR to one.
@@ -25,7 +33,7 @@
  0 - No hackery, checks for an "NSCF" prefix in the class name to identify CF
  objects and will assert if trying to make a ZWR to one
  */
-#define COREFOUNDATION_HACK_LEVEL 2
+#define COREFOUNDATION_HACK_LEVEL 1
 
 @interface MAZeroingWeakRef ()
 
@@ -72,6 +80,11 @@ static CFMutableDictionaryRef gObjectWeakRefsMap; // maps (non-retained) objects
 static NSMutableSet *gCustomSubclasses;
 static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their custom subclasses
 
+#if COREFOUNDATION_HACK_LEVEL >= 3
+static CFMutableSetRef gCFWeakTargets;
+static NSOperationQueue *gCFDelayedDestructionQueue;
+#endif
+
 + (void)initialize
 {
     if(self == [MAZeroingWeakRef class])
@@ -85,9 +98,15 @@ static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their
         gObjectWeakRefsMap = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
         gCustomSubclasses = [[NSMutableSet alloc] init];
         gCustomSubclassMap = [[NSMutableDictionary alloc] init];
+        
+#if COREFOUNDATION_HACK_LEVEL >= 3
+        gCFWeakTargets = CFSetCreateMutable(NULL, 0, NULL);
+        gCFDelayedDestructionQueue = [[NSOperationQueue alloc] init];
+#endif
     }
 }
 
+#define USE_BLOCKS_BASED_LOCKING 1
 #if USE_BLOCKS_BASED_LOCKING
 #define BLOCK_QUALIFIER __block
 static void WhileLocked(void (^block)(void))
@@ -168,7 +187,83 @@ static void CustomSubclassDealloc(id self, SEL _cmd)
     ((void (*)(id, SEL))superDealloc)(self, _cmd);
 }
 
-#if COREFOUNDATION_HACK_LEVEL >= 2
+#if COREFOUNDATION_HACK_LEVEL >= 3
+
+static void CallCFReleaseLater(CFTypeRef cf)
+{
+    mach_port_t thread = pthread_mach_thread_np(pthread_self());
+    mach_port_mod_refs(mach_task_self(), thread, MACH_PORT_RIGHT_SEND, 1 ); // "retain"
+
+    SEL sel = @selector(releaseLater:fromThread:);
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: [MAZeroingWeakRef methodSignatureForSelector: sel]];
+    [inv setTarget: [MAZeroingWeakRef class]];
+    [inv setSelector: sel];
+    [inv setArgument: &cf atIndex: 2];
+    [inv setArgument: &thread atIndex: 3];
+    
+    NSInvocationOperation *op = [[NSInvocationOperation alloc] initWithInvocation: inv];
+    [gCFDelayedDestructionQueue addOperation: op];
+    [op release];
+}
+
+static void *GetPC(mach_port_t thread)
+{
+#if defined(__x86_64__)
+    x86_thread_state64_t state;
+    unsigned int count = x86_THREAD_STATE64_COUNT;
+    thread_state_flavor_t flavor = x86_THREAD_STATE64;
+#define PC_REGISTER __rip
+#elif defined(__i386__)
+    i386_thread_state_t state;
+    unsigned int count = i386_THREAD_STATE_COUNT;
+    thread_state_flavor_t flavor = i386_THREAD_STATE;
+#define PC_REGISTER __eip
+#elif defined(__arm__)
+    arm_thread_state_t state;
+    unsigned int count = ARM_THREAD_STATE_COUNT;
+    thread_state_flavor_t flavor = ARM_THREAD_STATE;
+#define PC_REGISTER __pc
+#elif defined(__ppc__)
+    ppc_thread_state_t state;
+    unsigned int count = PPC_THREAD_STATE_COUNT;
+    thread_state_flavor_t flavor = PPC_THREAD_STATE;
+#define PC_REGISTER __srr0
+#elif defined(__ppc64__)
+    ppc_thread_state64_t state;
+    unsigned int count = PPC_THREAD_STATE64_COUNT;
+    thread_state_flavor_t flavor = PPC_THREAD_STATE64;
+#define PC_REGISTER __srr0
+#else
+#error don't know how to get PC for the current architecture!
+#endif
+    
+    kern_return_t ret = thread_get_state(thread, flavor, (thread_state_t)&state, &count);
+    if(ret == KERN_SUCCESS)
+        return (void *)state.PC_REGISTER;
+    else
+        return NULL;
+}
+
+static void CustomCFFinalize(CFTypeRef cf)
+{
+    WhileLocked({
+        if(CFSetContainsValue(gCFWeakTargets, cf))
+        {
+            ClearWeakRefsForObject((id)cf);
+            CFRetain(cf);
+            CFSetRemoveValue(gCFWeakTargets, cf);
+            CallCFReleaseLater(cf);
+        }
+        else
+        {
+            void (*fptr)(CFTypeRef) = gCFOriginalFinalizes[CFGetTypeID(cf)];
+            if(fptr)
+                fptr(cf);
+        }
+    });
+}
+
+#elif COREFOUNDATION_HACK_LEVEL >= 2
 
 static void CustomCFFinalize(CFTypeRef cf)
 {
@@ -182,7 +277,6 @@ static void CustomCFFinalize(CFTypeRef cf)
         }
     });
 }
-
 #endif
 
 static BOOL IsTollFreeBridged(Class class, id obj)
@@ -195,6 +289,38 @@ static BOOL IsTollFreeBridged(Class class, id obj)
     return [NSStringFromClass(class) hasPrefix: @"NSCF"];
 #endif
 }
+
+#if COREFOUNDATION_HACK_LEVEL >= 3
+void _CFRelease(CFTypeRef cf);
+
++ (void)releaseLater: (CFTypeRef)cf fromThread: (mach_port_t)thread
+{
+    BOOL retry = YES;
+    
+    while(retry)
+    {
+        void *pc = GetPC(thread);
+        
+        if(pc)
+        {
+            if(pc < (void *)CustomCFFinalize || pc > (void *)IsTollFreeBridged)
+            {
+                Dl_info info;
+                int success = dladdr(pc, &info);
+                if(success)
+                {
+                    if(info.dli_saddr != _CFRelease)
+                    {
+                        retry = NO; // success!
+                        CFRelease(cf);
+                        mach_port_mod_refs(mach_task_self(), thread, MACH_PORT_RIGHT_SEND, -1 ); // "release"
+                    }
+                }
+            }
+        }
+    }
+}
+#endif
 
 static Class CreateCustomSubclass(Class class, id obj)
 {
@@ -257,6 +383,10 @@ static void RegisterRef(MAZeroingWeakRef *ref, id target)
     WhileLocked({
         EnsureCustomSubclass(target);
         AddWeakRefToObject(target, ref);
+#if COREFOUNDATION_HACK_LEVEL >= 3
+        if(IsTollFreeBridged(object_getClass(target), target))
+            CFSetAddValue(gCFWeakTargets, target);
+#endif
     });
 }
 

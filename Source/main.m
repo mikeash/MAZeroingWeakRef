@@ -69,6 +69,27 @@ void Test(void (*func)(void), const char *name)
     } \
 } while(0)
 
+static BOOL WaitForNil(id (^block)(void))
+{
+    NSProcessInfo *pi = [NSProcessInfo processInfo];
+    
+    NSTimeInterval start = [pi systemUptime];
+    __block BOOL found;
+    do
+    {
+        WithPool(^{
+            found = block() != nil;
+        });
+    } while(found && [pi systemUptime] - start < 10);
+    
+    return !found;
+}
+
+static BOOL NilTarget(MAZeroingWeakRef *ref)
+{
+    return WaitForNil(^{ return [ref target]; });
+}
+
 static void TestBasic(void)
 {
     NSObject *obj = [[NSObject alloc] init];
@@ -77,7 +98,7 @@ static void TestBasic(void)
         TEST_ASSERT([ref target]);
         [obj release];
     });
-    TEST_ASSERT([ref target] == nil, @"ref target still live after object destroyed: %@", ref);
+    TEST_ASSERT(NilTarget(ref), @"ref target still live after object destroyed: %@", ref);
     [ref release];
 }
 
@@ -102,8 +123,8 @@ static void TestDoubleRef(void)
         TEST_ASSERT([ref2 target]);
         [obj release];
     });
-    TEST_ASSERT([ref1 target] == nil, @"ref target still live after object destroyed: %@", ref1);
-    TEST_ASSERT([ref2 target] == nil, @"ref target still live after object destroyed: %@", ref2);
+    TEST_ASSERT(NilTarget(ref1), @"ref target still live after object destroyed: %@", ref1);
+    TEST_ASSERT(NilTarget(ref2), @"ref target still live after object destroyed: %@", ref2);
     [ref1 release];
     [ref2 release];
 }
@@ -119,11 +140,11 @@ static void TestRefToRef(void)
         [obj release];
     });
     WithPool(^{
-        TEST_ASSERT([ref1 target] == nil, @"ref target still live after object destroyed: %@", ref1);
+        TEST_ASSERT(NilTarget(ref1), @"ref target still live after object destroyed: %@", ref1);
         TEST_ASSERT([ref2 target], @"ref target dead even though target ref still alive: %@", ref2);
         [ref1 release];
     });
-    TEST_ASSERT([ref2 target] == nil, @"ref target still live after object destroyed: %@", ref2);
+    TEST_ASSERT(NilTarget(ref2), @"ref target still live after object destroyed: %@", ref2);
     [ref2 release];
 }
 
@@ -141,7 +162,7 @@ static void TestNSArrayTarget(void)
         TEST_ASSERT([ref target]);
         [array release];
     });
-    TEST_ASSERT([ref target] == nil, @"ref target still live after object destroyed: %@", ref);
+    TEST_ASSERT(NilTarget(ref), @"ref target still live after object destroyed: %@", ref);
     [ref release];
 }
 
@@ -165,11 +186,29 @@ static void TestNSStringTarget(void)
 static void TestCleanup(void)
 {
     __block BOOL cleanedUp = NO;
-    NSMutableString *str = [[NSMutableString alloc] initWithString: @"Test String"];
-    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
+    NSObject *obj = [[NSObject alloc] init];
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: obj];
     [ref setCleanupBlock: ^(id target) { cleanedUp = YES; }];
-    [str release];
+    [obj release];
     TEST_ASSERT(cleanedUp);
+    [ref release];
+}
+
+static void TestCFCleanup(void)
+{
+    if(![MAZeroingWeakRef canRefCoreFoundationObjects])
+    {
+        NSLog(@"MAZeroingWeakRef can't reference CF objects, not testing them");
+        return;
+    }
+    
+    __block volatile BOOL cleanedUp = NO;
+    NSObject *obj = [[NSMutableString alloc] init];
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+    [ref setCleanupBlock: ^(id target) { cleanedUp = YES; }];
+    [obj release];
+    TEST_ASSERT(WaitForNil(^{ return (id)!cleanedUp; })
+);
     [ref release];
 }
 
@@ -187,6 +226,12 @@ static void TestNotification(void)
 
 static void TestWeakArray(void)
 {
+    if(![MAZeroingWeakRef canRefCoreFoundationObjects])
+    {
+        NSLog(@"MAZeroingWeakRef can't reference CF objects, not testing them");
+        return;
+    }
+    
     NSString *str1 = [[NSMutableString alloc] initWithString: @"Test String 1"];
     NSString *str2 = [[NSMutableString alloc] initWithString: @"Test String 2"];
     NSString *str3 = [[NSMutableString alloc] initWithString: @"Test String 3"];
@@ -200,21 +245,27 @@ static void TestWeakArray(void)
     
     WithPool(^{
         TEST_ASSERT([array objectAtIndex: 0]);
-        TEST_ASSERT([array objectAtIndex: 1] == nil);
+        TEST_ASSERT(WaitForNil(^{ return [array objectAtIndex: 1]; }));
         TEST_ASSERT([array objectAtIndex: 2]);
     });
     
     [str1 release];
     [str3 release];
     
-    TEST_ASSERT([array objectAtIndex: 0] == nil);
-    TEST_ASSERT([array objectAtIndex: 1] == nil);
-    TEST_ASSERT([array objectAtIndex: 2] == nil);
+    TEST_ASSERT(WaitForNil(^{ return [array objectAtIndex: 0]; }));
+    TEST_ASSERT(WaitForNil(^{ return [array objectAtIndex: 1]; }));
+    TEST_ASSERT(WaitForNil(^{ return [array objectAtIndex: 2]; }));
     [array release];
 }
 
 static void TestWeakDictionary(void)
 {
+    if(![MAZeroingWeakRef canRefCoreFoundationObjects])
+    {
+        NSLog(@"MAZeroingWeakRef can't reference CF objects, not testing them");
+        return;
+    }
+    
     NSString *str1 = [[NSMutableString alloc] initWithString: @"Test String 1"];
     NSString *str2 = [[NSMutableString alloc] initWithString: @"Test String 2"];
     NSString *str3 = [[NSMutableString alloc] initWithString: @"Test String 3"];
@@ -243,6 +294,12 @@ static void TestWeakDictionary(void)
 
 static void TestWeakProxy(void)
 {
+    if(![MAZeroingWeakRef canRefCoreFoundationObjects])
+    {
+        NSLog(@"MAZeroingWeakRef can't reference CF objects, not testing them");
+        return;
+    }
+    
     NSMutableString *str = [[NSMutableString alloc] init];
     NSMutableString *proxy = [[MAZeroingWeakProxy alloc] initWithTarget: str];
     
@@ -296,6 +353,7 @@ int main(int argc, const char * argv[])
         TEST(TestNSArrayTarget);
         TEST(TestNSStringTarget);
         TEST(TestCleanup);
+        TEST(TestCFCleanup);
         TEST(TestNotification);
         TEST(TestWeakArray);
         TEST(TestWeakDictionary);
