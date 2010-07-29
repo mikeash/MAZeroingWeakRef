@@ -194,6 +194,7 @@ static void CallCFReleaseLater(CFTypeRef cf)
     mach_port_t thread = pthread_mach_thread_np(pthread_self());
     mach_port_mod_refs(mach_task_self(), thread, MACH_PORT_RIGHT_SEND, 1 ); // "retain"
 
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     SEL sel = @selector(releaseLater:fromThread:);
     NSInvocation *inv = [NSInvocation invocationWithMethodSignature: [MAZeroingWeakRef methodSignatureForSelector: sel]];
     [inv setTarget: [MAZeroingWeakRef class]];
@@ -204,6 +205,7 @@ static void CallCFReleaseLater(CFTypeRef cf)
     NSInvocationOperation *op = [[NSInvocationOperation alloc] initWithInvocation: inv];
     [gCFDelayedDestructionQueue addOperation: op];
     [op release];
+    [pool release];
 }
 
 static void *GetPC(mach_port_t thread)
