@@ -254,8 +254,8 @@ static void CustomCFFinalize(CFTypeRef cf)
             if(CFGetRetainCount(cf) == 1)
             {
                 ClearWeakRefsForObject((id)cf);
-                CFRetain(cf);
                 CFSetRemoveValue(gCFWeakTargets, cf);
+                CFRetain(cf);
                 CallCFReleaseLater(cf);
             }
         }
