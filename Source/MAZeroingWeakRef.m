@@ -304,7 +304,12 @@ void _CFRelease(CFTypeRef cf);
     
     while(retry)
     {
-        void *pc = GetPC(thread);
+        BLOCK_QUALIFIER void *pc;
+        // ensure that the PC is outside our inner code when fetching it,
+        // so we don't have to check for all the nested calls
+        WhileLocked({
+            pc = GetPC(thread);
+        });
         
         if(pc)
         {
