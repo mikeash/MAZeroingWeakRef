@@ -251,10 +251,13 @@ static void CustomCFFinalize(CFTypeRef cf)
     WhileLocked({
         if(CFSetContainsValue(gCFWeakTargets, cf))
         {
-            ClearWeakRefsForObject((id)cf);
-            CFRetain(cf);
-            CFSetRemoveValue(gCFWeakTargets, cf);
-            CallCFReleaseLater(cf);
+            if(CFGetRetainCount(cf) == 1)
+            {
+                ClearWeakRefsForObject((id)cf);
+                CFRetain(cf);
+                CFSetRemoveValue(gCFWeakTargets, cf);
+                CallCFReleaseLater(cf);
+            }
         }
         else
         {
