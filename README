@@ -14,6 +14,22 @@ The MAZeroingWeakRef code is available through subversion:
 
     svn co http://mikeash.com/svn/ZeroingWeakRef
 
+And from GitHub:
+
+    http://github.com/mikeash/MAZeroingWeakRef
+
 MAZeroingWeakRef is made available under a BSD license.
+
+For more information about it, this blog post gives a basic introduction to the API:
+
+    http://mikeash.com/pyblog/introducing-mazeroingweakref.html
+
+This describes how it works in most cases:
+
+http://mikeash.com/pyblog/friday-qa-2010-07-16-zeroing-weak-references-in-objective-c.html
+
+And this describes some of the more hairy parts:
+
+    http://mikeash.com/pyblog/friday-qa-2010-07-30-zeroing-weak-references-to-corefoundation-objects.html
 
 Enjoy!
