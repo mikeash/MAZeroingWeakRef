@@ -193,9 +193,8 @@ static void CustomSubclassDealloc(id self, SEL _cmd)
 
 static void CallCFReleaseLater(CFTypeRef cf)
 {
-    mach_port_t thread = pthread_mach_thread_np(pthread_self());
-    mach_port_mod_refs(mach_task_self(), thread, MACH_PORT_RIGHT_SEND, 1 ); // "retain"
-
+    mach_port_t thread = mach_thread_self(); // must "release" this
+    
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     SEL sel = @selector(releaseLater:fromThread:);
     NSInvocation *inv = [NSInvocation invocationWithMethodSignature: [MAZeroingWeakRef methodSignatureForSelector: sel]];
@@ -210,7 +209,10 @@ static void CallCFReleaseLater(CFTypeRef cf)
     [pool release];
 }
 
-static void *GetPC(mach_port_t thread)
+static const void *kPCThreadExited = &kPCThreadExited;
+static const void *kPCError = NULL;
+
+static const void *GetPC(mach_port_t thread)
 {
 #if defined(__x86_64__)
     x86_thread_state64_t state;
@@ -244,8 +246,10 @@ static void *GetPC(mach_port_t thread)
     kern_return_t ret = thread_get_state(thread, flavor, (thread_state_t)&state, &count);
     if(ret == KERN_SUCCESS)
         return (void *)state.PC_REGISTER;
+    else if(ret == KERN_INVALID_ARGUMENT)
+        return kPCThreadExited;
     else
-        return NULL;
+        return kPCError;
 }
 
 static void CustomCFFinalize(CFTypeRef cf)
@@ -306,16 +310,16 @@ void _CFRelease(CFTypeRef cf);
     
     while(retry)
     {
-        BLOCK_QUALIFIER void *pc;
+        BLOCK_QUALIFIER const void *pc;
         // ensure that the PC is outside our inner code when fetching it,
         // so we don't have to check for all the nested calls
         WhileLocked({
             pc = GetPC(thread);
         });
         
-        if(pc)
+        if(pc != kPCError)
         {
-            if(pc < (void *)CustomCFFinalize || pc > (void *)IsTollFreeBridged)
+            if(pc == kPCThreadExited || pc < (void *)CustomCFFinalize || pc > (void *)IsTollFreeBridged)
             {
                 Dl_info info;
                 int success = dladdr(pc, &info);
