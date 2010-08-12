@@ -38,6 +38,7 @@
 @interface MAZeroingWeakRef ()
 
 - (void)_zeroTarget;
+- (void)_executeCleanupBlock;
 
 @end
 
@@ -150,6 +151,7 @@ static void ClearWeakRefsForObject(id obj)
     {
         NSSet *setCopy = [[NSSet alloc] initWithSet: (NSSet *)set];
         [setCopy makeObjectsPerformSelector: @selector(_zeroTarget)];
+        [setCopy makeObjectsPerformSelector: @selector(_executeCleanupBlockWithTarget:) withObject: obj];
         [setCopy release];
         CFDictionaryRemoveValue(gObjectWeakRefsMap, obj);
     }
@@ -464,15 +466,19 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (void)_zeroTarget
 {
+    _target = nil;
+}
+
+- (void)_executeCleanupBlockWithTarget: (id)target
+{
 #if NS_BLOCKS_AVAILABLE
     if(_cleanupBlock)
     {
-        _cleanupBlock(_target);
+        _cleanupBlock(target);
         [_cleanupBlock release];
         _cleanupBlock = nil;
     }
 #endif
-    _target = nil;
 }
 
 @end

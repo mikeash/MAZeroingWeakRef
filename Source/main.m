@@ -343,6 +343,27 @@ static void TestCleanupBlockReleasingZWR(void)
     [obj release];
 }
 
+static void TestAccidentalResurrectionInCleanupBlock(void)
+{
+    NSObject *obj = [[NSObject alloc] init];
+    WithPool(^{
+        __block MAZeroingWeakRef *ref1 = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+        __block MAZeroingWeakRef *ref2 = [[MAZeroingWeakRef alloc] initWithTarget: obj];
+        
+        id cleanupBlock = ^{
+            [ref1 target];
+            [ref2 target];
+        };
+        
+        [ref1 setCleanupBlock: cleanupBlock];
+        [ref2 setCleanupBlock: cleanupBlock];
+        
+        [obj release];
+        [ref1 release];
+        [ref2 release];
+    });
+}
+
 int main(int argc, const char * argv[])
 {
     WithPool(^{
@@ -359,6 +380,7 @@ int main(int argc, const char * argv[])
         TEST(TestWeakDictionary);
         TEST(TestWeakProxy);
         TEST(TestCleanupBlockReleasingZWR);
+        TEST(TestAccidentalResurrectionInCleanupBlock);
         
         NSString *message;
         if(gFailureCount)
