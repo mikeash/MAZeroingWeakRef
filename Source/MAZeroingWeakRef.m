@@ -35,6 +35,13 @@
  */
 #define COREFOUNDATION_HACK_LEVEL 1
 
+@interface NSObject (KVOPrivateMethod)
+
+- (BOOL)_isKVOA;
+
+@end
+
+
 @interface MAZeroingWeakRef ()
 
 - (void)_zeroTarget;
@@ -338,6 +345,28 @@ void _CFRelease(CFTypeRef cf);
 }
 #endif
 
+static BOOL IsKVOSubclass(id obj)
+{
+    return [obj respondsToSelector: @selector(_isKVOA)] && [obj _isKVOA];
+}
+
+static Class CreatePlainCustomSubclass(Class class)
+{
+    NSString *newName = [NSString stringWithFormat: @"%s_MAZeroingWeakRefSubclass", class_getName(class)];
+    const char *newNameC = [newName UTF8String];
+    
+    Class subclass = objc_allocateClassPair(class, newNameC, 0);
+    
+    Method release = class_getInstanceMethod(class, @selector(release));
+    Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
+    class_addMethod(subclass, @selector(release), (IMP)CustomSubclassRelease, method_getTypeEncoding(release));
+    class_addMethod(subclass, @selector(dealloc), (IMP)CustomSubclassDealloc, method_getTypeEncoding(dealloc));
+    
+    objc_registerClassPair(subclass);
+    
+    return subclass;
+}
+
 static Class CreateCustomSubclass(Class class, id obj)
 {
     if(IsTollFreeBridged(class, obj))
@@ -362,19 +391,24 @@ static Class CreateCustomSubclass(Class class, id obj)
     }
     else
     {
-        NSString *newName = [NSString stringWithFormat: @"%s_MAZeroingWeakRefSubclass", class_getName(class)];
-        const char *newNameC = [newName UTF8String];
+        Class classToSubclass = class;
+        Class newClass = nil;
+        BOOL isKVO = IsKVOSubclass(obj);
+        if(isKVO)
+        {
+            classToSubclass = class_getSuperclass(class);
+            newClass = [gCustomSubclassMap objectForKey: classToSubclass];
+        }
         
-        Class subclass = objc_allocateClassPair(class, newNameC, 0);
+        if(!newClass)
+        {
+            newClass = CreatePlainCustomSubclass(classToSubclass);
+            if(isKVO)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                class_setSuperclass(class, newClass); // EVIL EVIL EVIL
+        }
         
-        Method release = class_getInstanceMethod(class, @selector(release));
-        Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
-        class_addMethod(subclass, @selector(release), (IMP)CustomSubclassRelease, method_getTypeEncoding(release));
-        class_addMethod(subclass, @selector(dealloc), (IMP)CustomSubclassDealloc, method_getTypeEncoding(dealloc));
-        
-        objc_registerClassPair(subclass);
-        
-        return subclass;
+        return newClass;
     }
 }
 
@@ -390,7 +424,12 @@ static void EnsureCustomSubclass(id obj)
             [gCustomSubclassMap setObject: subclass forKey: class];
             [gCustomSubclasses addObject: subclass];
         }
-        object_setClass(obj, subclass);
+        
+        // only set the class if the current one is its superclass
+        // otherwise it's possible that it returns something farther up in the hierarchy
+        // and so there's no need to set it then
+        if(class_getSuperclass(subclass) == class)
+            object_setClass(obj, subclass);
     }
 }
 

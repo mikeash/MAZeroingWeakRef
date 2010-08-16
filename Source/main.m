@@ -42,7 +42,10 @@
 
 @end
 
-@interface KVOTarget : NSObject {} @end
+@interface KVOTargetSuperclass : NSObject {} @end
+@implementation KVOTargetSuperclass @end
+
+@interface KVOTarget : KVOTargetSuperclass {} @end
 @implementation KVOTarget
 
 - (void)setKey: (id)newValue
@@ -387,16 +390,30 @@ static void TestAccidentalResurrectionInCleanupBlock(void)
 static void TestKVOTarget(void)
 {
     KVOTarget *target = [[KVOTarget alloc] init];
-    NSLog(@"%@, %p %s", target, object_getClass(target), class_getName(object_getClass(target)));
+    void (^describe)(void) = ^{
+        return;
+        
+        Class nsClass = [target class];
+        NSString *nsName = [nsClass description];
+        Class objcClass = object_getClass(target);
+        const char *objcName = class_getName(objcClass);
+        
+        NSLog(@"%@, %s %@ %p %p", target, objcName, nsName, objcClass, nsClass);
+    };
+    
+    describe();
     
     [target addObserver: target forKeyPath: @"key" options: 0 context: NULL];
-    NSLog(@"%@, %p %s", target, object_getClass(target), class_getName(object_getClass(target)));
+    describe();
     
     MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
-    NSLog(@"%@, %p %s", target, object_getClass(target), class_getName(object_getClass(target)));
+    describe();
+    
+    [target setKey: @"value"];
+    describe();
     
     [ref release];
-    NSLog(@"%@, %p %s", target, object_getClass(target), class_getName(object_getClass(target)));
+    describe();
 }
 
 int main(int argc, const char * argv[])
