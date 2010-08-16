@@ -38,7 +38,7 @@
 @interface MAZeroingWeakRef ()
 
 - (void)_zeroTarget;
-- (void)_executeCleanupBlock;
+- (void)_executeCleanupBlockWithTarget: (id)target;
 
 @end
 
