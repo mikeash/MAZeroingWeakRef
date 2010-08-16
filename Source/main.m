@@ -9,6 +9,8 @@
 
 #import <Foundation/Foundation.h>
 
+#import <objc/runtime.h>
+
 #import "MANotificationCenterAdditions.h"
 #import "MAZeroingWeakProxy.h"
 #import "MAZeroingWeakRef.h"
@@ -36,6 +38,24 @@
 - (void)gotNote: (NSNotification *)note
 {
     (*_noteCounter)++;
+}
+
+@end
+
+@interface KVOTarget : NSObject {} @end
+@implementation KVOTarget
+
+- (void)setKey: (id)newValue
+{
+}
+
+- (id)key
+{
+    return nil;
+}
+
+- (void)observeValueForKeyPath: (NSString *)keyPath ofObject: (id)object change: (NSDictionary *)change context: (void *)context
+{
 }
 
 @end
@@ -364,6 +384,21 @@ static void TestAccidentalResurrectionInCleanupBlock(void)
     });
 }
 
+static void TestKVOTarget(void)
+{
+    KVOTarget *target = [[KVOTarget alloc] init];
+    NSLog(@"%@, %p %s", target, object_getClass(target), class_getName(object_getClass(target)));
+    
+    [target addObserver: target forKeyPath: @"key" options: 0 context: NULL];
+    NSLog(@"%@, %p %s", target, object_getClass(target), class_getName(object_getClass(target)));
+    
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
+    NSLog(@"%@, %p %s", target, object_getClass(target), class_getName(object_getClass(target)));
+    
+    [ref release];
+    NSLog(@"%@, %p %s", target, object_getClass(target), class_getName(object_getClass(target)));
+}
+
 int main(int argc, const char * argv[])
 {
     WithPool(^{
@@ -381,6 +416,7 @@ int main(int argc, const char * argv[])
         TEST(TestWeakProxy);
         TEST(TestCleanupBlockReleasingZWR);
         TEST(TestAccidentalResurrectionInCleanupBlock);
+        TEST(TestKVOTarget);
         
         NSString *message;
         if(gFailureCount)
