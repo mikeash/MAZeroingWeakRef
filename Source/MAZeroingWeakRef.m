@@ -367,6 +367,18 @@ static Class CreatePlainCustomSubclass(Class class)
     return subclass;
 }
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#endif
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+static void SetSuperclass(Class class, Class newSuper)
+{
+    class_setSuperclass(class, newSuper);
+}
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
 static Class CreateCustomSubclass(Class class, id obj)
 {
     if(IsTollFreeBridged(class, obj))
@@ -404,8 +416,7 @@ static Class CreateCustomSubclass(Class class, id obj)
         {
             newClass = CreatePlainCustomSubclass(classToSubclass);
             if(isKVO)
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-                class_setSuperclass(class, newClass); // EVIL EVIL EVIL
+                SetSuperclass(class, newClass); // EVIL EVIL EVIL
         }
         
         return newClass;
