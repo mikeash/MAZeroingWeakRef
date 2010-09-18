@@ -58,9 +58,12 @@
     NSMethodSignature *sig = [inv methodSignature];
     NSUInteger returnLength = [sig methodReturnLength];
     
-    char buf[returnLength];
-    bzero(buf, sizeof(buf));
-    [inv setReturnValue: buf];
+    if(returnLength)
+    {
+        char buf[returnLength];
+        bzero(buf, sizeof(buf));
+        [inv setReturnValue: buf];
+    }
 }
 
 - (BOOL)respondsToSelector: (SEL)sel
