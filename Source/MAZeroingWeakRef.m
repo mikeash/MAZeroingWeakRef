@@ -196,6 +196,17 @@ static void CustomSubclassDealloc(id self, SEL _cmd)
     ((void (*)(id, SEL))superDealloc)(self, _cmd);
 }
 
+static Class CustomSubclassClassForCoder(id self, SEL _cmd)
+{
+    Class class = GetCustomSubclass(self);
+    Class superclass = class_getSuperclass(class);
+    IMP superClassForCoder = class_getMethodImplementation(superclass, @selector(classForCoder));
+    Class classForCoder = ((id (*)(id, SEL))superClassForCoder)(self, _cmd);
+    if(classForCoder == class)
+        classForCoder = superclass;
+    return classForCoder;
+}
+
 #if COREFOUNDATION_HACK_LEVEL >= 3
 
 static void CallCFReleaseLater(CFTypeRef cf)
@@ -359,8 +370,10 @@ static Class CreatePlainCustomSubclass(Class class)
     
     Method release = class_getInstanceMethod(class, @selector(release));
     Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
+    Method classForCoder = class_getInstanceMethod(class, @selector(classForCoder));
     class_addMethod(subclass, @selector(release), (IMP)CustomSubclassRelease, method_getTypeEncoding(release));
     class_addMethod(subclass, @selector(dealloc), (IMP)CustomSubclassDealloc, method_getTypeEncoding(dealloc));
+    class_addMethod(subclass, @selector(classForCoder), (IMP)CustomSubclassClassForCoder, method_getTypeEncoding(classForCoder));
     
     objc_registerClassPair(subclass);
     

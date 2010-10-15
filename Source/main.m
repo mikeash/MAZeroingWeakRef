@@ -416,6 +416,14 @@ static void TestKVOTarget(void)
     describe();
 }
 
+static void TestClassForCoder(void)
+{
+    NSObject *obj = [[NSObject alloc] init];
+    TEST_ASSERT([obj classForCoder] == [NSObject class]);
+    [[[MAZeroingWeakRef alloc] initWithTarget: obj] autorelease];
+    TEST_ASSERT([obj classForCoder] == [NSObject class]);
+}
+
 int main(int argc, const char * argv[])
 {
     WithPool(^{
@@ -434,6 +442,7 @@ int main(int argc, const char * argv[])
         TEST(TestCleanupBlockReleasingZWR);
         TEST(TestAccidentalResurrectionInCleanupBlock);
         TEST(TestKVOTarget);
+        TEST(TestClassForCoder);
         
         NSString *message;
         if(gFailureCount)
