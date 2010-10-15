@@ -5,7 +5,7 @@
 //  Created by Michael Ash on 7/5/10.
 //
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 
 
 @interface MAZeroingWeakRef : NSObject

@@ -6,7 +6,7 @@
 //  Copyright 2010 Michael Ash. All rights reserved.
 //
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 
 
 @class MAZeroingWeakRef;
