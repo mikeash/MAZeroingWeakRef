@@ -442,7 +442,6 @@ int main(int argc, const char * argv[])
             message = @"SUCCESS";
         NSLog(@"Tests complete: %@", message);
     });
-    sleep(1000);
     return 0;
 }
 
