@@ -35,11 +35,22 @@
  */
 #define COREFOUNDATION_HACK_LEVEL 1
 
+/*
+ The KVO_HACK_LEVEL macro allows similar control over the amount of KVO hackery.
+ 
+ 1 - Use the private _isKVOA method to check for a KVO dynamic subclass.
+ 
+ 0 - No hackery, uses the KVO overridden -class to check.
+ */
+#define KVO_HACK_LEVEL 1
+
+#if KVO_HACK_LEVEL >= 1
 @interface NSObject (KVOPrivateMethod)
 
 - (BOOL)_isKVOA;
 
 @end
+#endif
 
 
 @interface MAZeroingWeakRef ()
@@ -358,7 +369,11 @@ void _CFRelease(CFTypeRef cf);
 
 static BOOL IsKVOSubclass(id obj)
 {
+#if KVO_HACK_LEVEL >= 1
     return [obj respondsToSelector: @selector(_isKVOA)] && [obj _isKVOA];
+#else
+    return [obj class] == class_getSuperclass(object_getClass(obj));
+#endif
 }
 
 static Class CreatePlainCustomSubclass(Class class)
