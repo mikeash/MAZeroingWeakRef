@@ -10,6 +10,10 @@ The API is simple and mostly self-explanatory from the header file. Note that cl
 
 In order to allow weak references to CoreFoundation bridged objects, a fair amount of crazy hacking of private APIs had to be done. For people who don't like that sort of thing, or who are worried about rejection when building for iOS, this crazy hacking can be reduced or disabled altogether. Look at the COREFOUNDATION_HACK_LEVEL macro in MAZeroingWeakRef.m, and the comment above it which explains what the different levels do.
 
+A similar KVO_HACK_LEVEL macro is also available.
+
+For iOS work, or Mac App Store work, you will probably want to set both of these to `0`.
+
 The MAZeroingWeakRef code is available through subversion:
 
     svn co http://mikeash.com/svn/ZeroingWeakRef
