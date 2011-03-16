@@ -407,6 +407,12 @@ static void SetSuperclass(Class class, Class newSuper)
 #pragma clang diagnostic pop
 #endif
 
+static void RegisterCustomSubclass(Class subclass, Class superclass)
+{
+    [gCustomSubclassMap setObject: subclass forKey: superclass];
+    [gCustomSubclasses addObject: subclass];
+}
+
 static Class CreateCustomSubclass(Class class, id obj)
 {
     if(IsTollFreeBridged(class, obj))
@@ -444,7 +450,10 @@ static Class CreateCustomSubclass(Class class, id obj)
         {
             newClass = CreatePlainCustomSubclass(classToSubclass);
             if(isKVO)
+            {
                 SetSuperclass(class, newClass); // EVIL EVIL EVIL
+                RegisterCustomSubclass(newClass, classToSubclass);
+            }
         }
         
         return newClass;
@@ -460,8 +469,7 @@ static void EnsureCustomSubclass(id obj)
         if(!subclass)
         {
             subclass = CreateCustomSubclass(class, obj);
-            [gCustomSubclassMap setObject: subclass forKey: class];
-            [gCustomSubclasses addObject: subclass];
+            RegisterCustomSubclass(subclass, class);
         }
         
         // only set the class if the current one is its superclass

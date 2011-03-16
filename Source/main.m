@@ -424,6 +424,22 @@ static void TestClassForCoder(void)
     TEST_ASSERT([obj classForCoder] == [NSObject class]);
 }
 
+static void TestKVOReleaseNoCrash(void)
+{
+	KVOTarget *target = [[KVOTarget alloc] init];
+    
+	MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
+    
+	[target addObserver: target forKeyPath: @"key" options: 0 context: NULL];
+    
+	[target setKey: @"value"];
+    
+	[target release];	
+	[ref target];
+    
+	[ref release];
+}
+
 int main(int argc, const char * argv[])
 {
     WithPool(^{
@@ -443,6 +459,8 @@ int main(int argc, const char * argv[])
         TEST(TestAccidentalResurrectionInCleanupBlock);
         TEST(TestKVOTarget);
         TEST(TestClassForCoder);
+        TEST(TestKVOReleaseNoCrash);
+        TEST(TestKVOReleaseCrash);
         
         NSString *message;
         if(gFailureCount)
