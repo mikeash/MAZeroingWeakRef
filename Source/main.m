@@ -434,6 +434,24 @@ static void TestKVOReleaseNoCrash(void)
     
 	[target setKey: @"value"];
     
+    // destroying target without removing the observer tosses a warning to the console
+    // but it's necessary in order to test this failure mode
+	[target release];	
+	[ref target];
+    
+	[ref release];
+}
+
+static void TestKVOReleaseCrash(void)
+{
+	KVOTarget *target = [[KVOTarget alloc] init];
+    
+	[target addObserver: target forKeyPath: @"key" options: 0 context: NULL];
+    
+	MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
+    
+	[target setKey: @"value"];
+    
 	[target release];	
 	[ref target];
     

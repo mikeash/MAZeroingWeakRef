@@ -452,6 +452,15 @@ static Class CreateCustomSubclass(Class class, id obj)
             if(isKVO)
             {
                 SetSuperclass(class, newClass); // EVIL EVIL EVIL
+                
+                // if you thought setting the superclass was evil, wait until you get a load of this
+                // for some reason, KVO stores the superclass of the KVO class in the class's indexed ivars
+                // I don't know why they don't just use class_getSuperclass, but there we are
+                // this has to be set as well, otherwise KVO can skip over our dealloc, causing
+                // weak references not to get zeroed, doh!
+                id *kvoSuperclass = object_getIndexedIvars(class);
+                *kvoSuperclass = newClass;
+                
                 RegisterCustomSubclass(newClass, classToSubclass);
             }
         }
