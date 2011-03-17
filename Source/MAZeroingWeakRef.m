@@ -33,7 +33,9 @@
  0 - No hackery, checks for an "NSCF" prefix in the class name to identify CF
  objects and will assert if trying to make a ZWR to one
  */
+#ifndef COREFOUNDATION_HACK_LEVEL
 #define COREFOUNDATION_HACK_LEVEL 1
+#endif
 
 /*
  The KVO_HACK_LEVEL macro allows similar control over the amount of KVO hackery.
@@ -42,7 +44,9 @@
  
  0 - No hackery, uses the KVO overridden -class to check.
  */
+#ifndef KVO_HACK_LEVEL
 #define KVO_HACK_LEVEL 1
+#endif
 
 #if KVO_HACK_LEVEL >= 1
 @interface NSObject (KVOPrivateMethod)
