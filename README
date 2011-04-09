@@ -12,17 +12,22 @@ In order to allow weak references to CoreFoundation bridged objects, a fair amou
 
 A similar KVO_HACK_LEVEL macro is also available.
 
-For iOS work, or Mac App Store work, you will probably want to set both of these to `0`.
+App Store
+---------
 
-The MAZeroingWeakRef code is available through subversion:
+For iOS work, or Mac App Store work, you will probably want to set both COREFOUNDATION_HACK_LEVEL and KVO_HACK_LEVEL to `0`. In this mode, MAZeroingWeakRef uses no private APIs.
 
-    svn co http://mikeash.com/svn/ZeroingWeakRef
+Source Code
+-----------
 
-And from GitHub:
+The MAZeroingWeakRef code is available from GitHub:
 
     http://github.com/mikeash/MAZeroingWeakRef
 
 MAZeroingWeakRef is made available under a BSD license.
+
+More Information
+----------------
 
 For more information about it, this blog post gives a basic introduction to the API:
 
