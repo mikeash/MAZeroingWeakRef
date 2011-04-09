@@ -1,6 +1,7 @@
-MAZeroingWeakRef
-by Michael Ash
-mike@mikeash.com
+MAZeroingWeakRef - by Mike Ash - mike@mikeash.com
+
+Introduction
+------------
 
 MAZeroingWeakRef is a library for using zeroing weak references in retain/release Cocoa and Cocoa Touch code. These are references which do not keep an object alive, and which automatically become nil once the object is destroyed.
 
