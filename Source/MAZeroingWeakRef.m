@@ -330,7 +330,8 @@ static BOOL IsTollFreeBridged(Class class, id obj)
     Class tfbClass = __CFRuntimeObjCClassTable[typeID];
     return class == tfbClass;
 #else
-    return [NSStringFromClass(class) hasPrefix: @"NSCF"];
+    NSString *className = NSStringFromClass(class);
+    return [className hasPrefix:@"NSCF"] || [className hasPrefix:@"__NSCF"];
 #endif
 }
 
