@@ -337,7 +337,8 @@ static BOOL IsTollFreeBridged(Class class, id obj)
 
 static BOOL IsConstantObject(id obj)
 {
-  return (unsigned int)[obj retainCount] == UINT_MAX;
+  unsigned int retainCount = [obj retainCount];
+  return retainCount == UINT_MAX || retainCount == INT_MAX;
 }
 
 #if COREFOUNDATION_HACK_LEVEL >= 3
