@@ -244,8 +244,8 @@ static void TestNSConstantTarget(void)
 
     TEST_EXCEPTION(^{
       NSString *str = [[NSMutableString alloc] initWithString: @"Not Constant String"];
-      [[[MAZeroingWeakRef alloc] initWithTarget: str] autorelease];
-      [str release];
+      MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
+      [ref release];
     });
 }
 
