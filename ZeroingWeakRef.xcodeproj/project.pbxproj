@@ -136,7 +136,14 @@
 			isa = PBXProject;
 			buildConfigurationList = C2D753FF11E2588500816068 /* Build configuration list for PBXProject "ZeroingWeakRef" */;
 			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
 			hasScannedForEncodings = 0;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = C2D753FA11E2588500816068;
 			productRefGroup = C2D7540811E2588600816068 /* Products */;
 			projectDirPath = "";

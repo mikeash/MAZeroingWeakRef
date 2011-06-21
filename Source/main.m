@@ -82,7 +82,28 @@ void Test(void (*func)(void), const char *name)
     });
 }
 
+BOOL TestException(void (^block)(void))
+{
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    @try {
+        block();
+        return NO;
+    }
+    @catch (NSException * e) {        
+        return YES;
+    } @finally {
+      [pool drain];
+    }
+}
+
 #define TEST(func) Test(func, #func)
+
+#define TEST_EXCEPTION(block) do { \
+  if(!TestException(block)) { \
+    gFailureCount++; \
+    NSLog(@"%s:%d: assertion failed: exception was not thrown", __func__, __LINE__); \
+  } \
+} while(0)
 
 #define TEST_ASSERT(cond, ...) do { \
     if(!(cond)) { \
@@ -204,6 +225,28 @@ static void TestNSStringTarget(void)
         [str release];
     });
     [ref release];
+}
+
+static void TestNSConstantTarget(void)
+{
+    if ([MAZeroingWeakRef canRefCoreFoundationObjects]) {
+      NSLog(@"MAZeroingWeakRef can reference CF objects, not testing constant object");
+      return;
+    }
+    
+    NSString *str = @"Constant String";
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
+    WithPool(^{
+      TEST_ASSERT([ref target]);
+      [str release];
+    });
+    [ref release];  
+
+    TEST_EXCEPTION(^{
+      NSString *str = [[NSMutableString alloc] initWithString: @"Not Constant String"];
+      MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
+      [ref release];
+    });
 }
 
 static void TestCleanup(void)
@@ -467,6 +510,7 @@ int main(int argc, const char * argv[])
         TEST(TestRefToRef);
         TEST(TestNSArrayTarget);
         TEST(TestNSStringTarget);
+        TEST(TestNSConstantTarget);
         TEST(TestCleanup);
         TEST(TestCFCleanup);
         TEST(TestNotification);

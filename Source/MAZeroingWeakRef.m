@@ -335,6 +335,12 @@ static BOOL IsTollFreeBridged(Class class, id obj)
 #endif
 }
 
+static BOOL IsConstantObject(id obj)
+{
+  unsigned int retainCount = [obj retainCount];
+  return retainCount == UINT_MAX || retainCount == INT_MAX;
+}
+
 #if COREFOUNDATION_HACK_LEVEL >= 3
 void _CFRelease(CFTypeRef cf);
 
@@ -436,7 +442,7 @@ static Class CreateCustomSubclass(Class class, id obj)
             gCFOriginalFinalizes[typeID] = cfclass->finalize;
         } while(!OSAtomicCompareAndSwapPtrBarrier(gCFOriginalFinalizes[typeID], CustomCFFinalize, (void *)&cfclass->finalize));
 #else
-        NSCAssert(0, @"Cannot create zeroing weak reference to object of type %@ with COREFOUNDATION_HACK_LEVEL set to %d", class, COREFOUNDATION_HACK_LEVEL);
+        NSCAssert(0, @"Cannot create zeroing weak reference to object of type %@ with COREFOUNDATION_HACK_LEVEL set to %d", class, COREFOUNDATION_HACK_LEVEL);          
 #endif
         return class;
     }
@@ -476,7 +482,7 @@ static Class CreateCustomSubclass(Class class, id obj)
 
 static void EnsureCustomSubclass(id obj)
 {
-    if(!GetCustomSubclass(obj))
+    if(!GetCustomSubclass(obj) && !IsConstantObject(obj))
     {
         Class class = object_getClass(obj);
         Class subclass = [gCustomSubclassMap objectForKey: class];
