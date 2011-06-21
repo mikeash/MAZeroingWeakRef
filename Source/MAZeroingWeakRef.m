@@ -190,7 +190,7 @@ static Class GetCustomSubclass(id obj)
 static Class GetRealSuperclass(id obj)
 {
     Class class = GetCustomSubclass(obj);
-    NSCAssert(class, @"Coudn't find ZeroingWeakRef subclass in hierarchy starting from %@, should never happen", object_getClass(obj));
+    NSCAssert1(class, @"Coudn't find ZeroingWeakRef subclass in hierarchy starting from %@, should never happen", object_getClass(obj));
     return class_getSuperclass(class);
 }
 
@@ -442,7 +442,7 @@ static Class CreateCustomSubclass(Class class, id obj)
             gCFOriginalFinalizes[typeID] = cfclass->finalize;
         } while(!OSAtomicCompareAndSwapPtrBarrier(gCFOriginalFinalizes[typeID], CustomCFFinalize, (void *)&cfclass->finalize));
 #else
-        NSCAssert(0, @"Cannot create zeroing weak reference to object of type %@ with COREFOUNDATION_HACK_LEVEL set to %d", class, COREFOUNDATION_HACK_LEVEL);          
+        NSCAssert2(0, @"Cannot create zeroing weak reference to object of type %@ with COREFOUNDATION_HACK_LEVEL set to %d", class, COREFOUNDATION_HACK_LEVEL);          
 #endif
         return class;
     }
