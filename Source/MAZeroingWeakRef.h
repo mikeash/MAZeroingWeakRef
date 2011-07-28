@@ -23,6 +23,14 @@
 - (id)initWithTarget: (id)target;
 
 #if NS_BLOCKS_AVAILABLE
+// ON 10.7:
+// cleanup block runs while the target's memory is still
+// allocated but after all dealloc methods have run
+// (it runs at associated object cleanup time)
+// you can use the target's pointer value but don't
+// manipulate its contents!
+
+// ON 10.6 AND BELOW:
 // cleanup block runs while the global ZWR lock is held
 // so make it short and sweet!
 // use GCD or something to schedule execution later

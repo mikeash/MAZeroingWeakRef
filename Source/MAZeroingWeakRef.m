@@ -57,13 +57,47 @@
 #endif
 
 
-static id (*objc_loadWeak_fptr)(id *location);
-static id (*objc_storeWeak_fptr)(id *location, id obj);
-
 @interface MAZeroingWeakRef ()
 
 - (void)_zeroTarget;
 - (void)_executeCleanupBlockWithTarget: (id)target;
+
+@end
+
+
+static id (*objc_loadWeak_fptr)(id *location);
+static id (*objc_storeWeak_fptr)(id *location, id obj);
+
+@interface _MAZeroingWeakRefCleanupHelper : NSObject
+{
+    MAZeroingWeakRef *_ref;
+    id _target;
+}
+
+- (id)initWithRef: (MAZeroingWeakRef *)ref target: (id)target;
+
+@end
+
+@implementation _MAZeroingWeakRefCleanupHelper
+
+- (id)initWithRef: (MAZeroingWeakRef *)ref target: (id)target
+{
+    if((self = [self init]))
+    {
+        objc_storeWeak_fptr(&_ref, ref);
+        _target = target;
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    MAZeroingWeakRef *ref = objc_loadWeak_fptr(&_ref);
+    [ref _executeCleanupBlockWithTarget: _target];
+    objc_storeWeak_fptr(&_ref, nil);
+    
+    [super dealloc];
+}
 
 @end
 
@@ -553,7 +587,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 + (BOOL)canRefCoreFoundationObjects
 {
-    return COREFOUNDATION_HACK_LEVEL >= 2;
+    return COREFOUNDATION_HACK_LEVEL >= 2 || objc_storeWeak_fptr;
 }
 
 + (id)refWithTarget: (id)target
@@ -602,6 +636,26 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
     block = [block copy];
     [_cleanupBlock release];
     _cleanupBlock = block;
+    
+    if(objc_loadWeak_fptr)
+    {
+        // wrap a pool around this code, otherwise it artificially extends
+        // the lifetime of the target object
+        NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+        
+        id target = [self target];
+        if(target)
+        {
+            _MAZeroingWeakRefCleanupHelper *helper = [[_MAZeroingWeakRefCleanupHelper alloc] initWithRef: self target: target];
+            
+            static void *associatedKey = &associatedKey;
+            objc_setAssociatedObject(target, associatedKey, helper, OBJC_ASSOCIATION_RETAIN);
+            
+            [helper release];
+        }
+        
+        [pool release];
+    }
 }
 #endif
 
