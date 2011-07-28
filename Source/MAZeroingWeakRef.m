@@ -57,6 +57,9 @@
 #endif
 
 
+static id (*objc_loadWeak_fptr)(id *location);
+static id (*objc_storeWeak_fptr)(id *location, id obj);
+
 @interface MAZeroingWeakRef ()
 
 - (void)_zeroTarget;
@@ -121,6 +124,32 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
         gObjectWeakRefsMap = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
         gCustomSubclasses = [[NSMutableSet alloc] init];
         gCustomSubclassMap = [[NSMutableDictionary alloc] init];
+        
+        // see if the 10.7 ZWR runtime functions are available
+        // nothing special about objc_allocateClassPair, it just
+        // seems like a reasonable and safe choice for finding
+        // the runtime functions
+        Dl_info info;
+        int success = dladdr(objc_allocateClassPair, &info);
+        if(success)
+        {
+            // note: we leak the handle because it's inconsequential
+            // and technically, the fptrs would be invalid after a dlclose
+            void *handle = dlopen(info.dli_fname, RTLD_LAZY | RTLD_GLOBAL);
+            if(handle)
+            {
+                objc_loadWeak_fptr = dlsym(handle, "objc_loadWeak");
+                objc_storeWeak_fptr = dlsym(handle, "objc_storeWeak");
+                
+                // if either one failed, make sure both are zeroed out
+                // this is probably unnecessary, but good paranoia
+                if(!objc_loadWeak_fptr || !objc_storeWeak_fptr)
+                {
+                    objc_loadWeak_fptr = NULL;
+                    objc_storeWeak_fptr = NULL;
+                }
+            }
+        }
         
 #if COREFOUNDATION_HACK_LEVEL >= 3
         gCFWeakTargets = CFSetCreateMutable(NULL, 0, NULL);
@@ -536,15 +565,26 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 {
     if((self = [self init]))
     {
-        _target = target;
-        RegisterRef(self, target);
+        if(objc_storeWeak_fptr)
+        {
+            objc_storeWeak_fptr(&_target, target);
+        }
+        else
+        {
+            _target = target;
+            RegisterRef(self, target);
+        }
     }
     return self;
 }
 
 - (void)dealloc
 {
-    UnregisterRef(self);
+    if(objc_storeWeak_fptr)
+        objc_storeWeak_fptr(&_target, nil);
+    else
+        UnregisterRef(self);
+    
 #if NS_BLOCKS_AVAILABLE
     [_cleanupBlock release];
 #endif
@@ -567,11 +607,18 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (id)target
 {
-    BLOCK_QUALIFIER id ret;
-    WhileLocked({
-        ret = [_target retain];
-    });
-    return [ret autorelease];
+    if(objc_loadWeak_fptr)
+    {
+        return objc_loadWeak_fptr(&_target);
+    }
+    else
+    {
+        BLOCK_QUALIFIER id ret;
+        WhileLocked({
+            ret = [_target retain];
+        });
+        return [ret autorelease];
+    }
 }
 
 - (void)_zeroTarget
