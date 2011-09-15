@@ -64,4 +64,42 @@
                          withObject: [MAZeroingWeakRef refWithTarget: anObject]];
 }
 
+- (id)copyWithZone:(NSZone *)zone
+{
+    id *objects = calloc([self count], sizeof(id));
+    NSInteger count = 0;
+    
+    for(id obj in self)
+        if(obj != nil)
+        {
+            objects[count] = obj;
+            count++;
+        }
+    
+    NSArray *ret = [[NSArray alloc] initWithObjects:objects count:count];
+    
+    free(objects);
+    
+    return ret;
+}
+
+- (id)mutableCopyWithZone:(NSZone *)zone
+{
+    id *objects = calloc([self count], sizeof(id));
+    NSInteger count = 0;
+    
+    for(id obj in self)
+        if(obj != nil)
+        {
+            objects[count] = obj;
+            count++;
+        }
+    
+    NSArray *ret = [[NSMutableArray alloc] initWithObjects:objects count:count];
+    
+    free(objects);
+    
+    return ret;
+}
+
 @end
