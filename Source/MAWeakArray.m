@@ -14,10 +14,26 @@
 
 - (id)init
 {
+    return [self initWithCapacity:0];
+}
+
+- (id)initWithCapacity:(NSUInteger)numItems
+{
     if((self = [super init]))
     {
-        _weakRefs = [[NSMutableArray alloc] init];
+        _weakRefs = [[NSMutableArray alloc] initWithCapacity:numItems];
     }
+    return self;
+}
+
+- (id)initWithObjects:(const id [])objects count:(NSUInteger)cnt
+{
+    self = [self initWithCapacity:cnt];
+    
+    for(NSInteger i = 0; i < cnt; i++)
+        if(objects[i] != nil)
+            [self addObject:objects[i]];
+    
     return self;
 }
 
