@@ -459,6 +459,16 @@ static void TestKVOTarget(void)
     describe();
 }
 
+static void TestKVOMultiLevelTarget(void)
+{
+    KVOTarget *target = [[KVOTarget alloc] init];
+    [target addObserver: target forKeyPath: @"key.whatever" options: 0 context: NULL];
+	
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
+	[target removeObserver:target forKeyPath:@"key.whatever"];
+    [ref release];
+}
+
 static void TestClassForCoder(void)
 {
     NSObject *obj = [[NSObject alloc] init];
@@ -520,6 +530,7 @@ int main(int argc, const char * argv[])
         TEST(TestCleanupBlockReleasingZWR);
         TEST(TestAccidentalResurrectionInCleanupBlock);
         TEST(TestKVOTarget);
+        TEST(TestKVOMultiLevelTarget);
         TEST(TestClassForCoder);
         TEST(TestKVOReleaseNoCrash);
         TEST(TestKVOReleaseCrash);
