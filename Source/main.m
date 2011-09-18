@@ -433,30 +433,11 @@ static void TestAccidentalResurrectionInCleanupBlock(void)
 static void TestKVOTarget(void)
 {
     KVOTarget *target = [[KVOTarget alloc] init];
-    void (^describe)(void) = ^{
-        return;
-        
-        Class nsClass = [target class];
-        NSString *nsName = [nsClass description];
-        Class objcClass = object_getClass(target);
-        const char *objcName = class_getName(objcClass);
-        
-        NSLog(@"%@, %s %@ %p %p", target, objcName, nsName, objcClass, nsClass);
-    };
-    
-    describe();
-    
     [target addObserver: target forKeyPath: @"key" options: 0 context: NULL];
-    describe();
     
     MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
-    describe();
-    
     [target setKey: @"value"];
-    describe();
-    
     [ref release];
-    describe();
 }
 
 static void TestKVOMultiLevelTarget(void)
