@@ -285,6 +285,21 @@ static Class CustomSubclassClassForCoder(id self, SEL _cmd)
     return classForCoder;
 }
 
+static void KVOSubclassRelease(id self, SEL _cmd)
+{
+    IMP originalRelease = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_release));
+    WhileLocked({
+        ((void (*)(id, SEL))originalRelease)(self, _cmd);
+    });
+}
+
+static void KVOSubclassDealloc(id self, SEL _cmd)
+{
+    ClearWeakRefsForObject(self);
+    IMP originalDealloc = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_dealloc));
+    ((void (*)(id, SEL))originalDealloc)(self, _cmd);
+}
+
 #if COREFOUNDATION_HACK_LEVEL >= 3
 
 static void CallCFReleaseLater(CFTypeRef cf)
@@ -469,17 +484,18 @@ static Class CreatePlainCustomSubclass(Class class)
     return subclass;
 }
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#endif
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-static void SetSuperclass(Class class, Class newSuper)
+static void PatchKVOSubclass(Class class)
 {
-    class_setSuperclass(class, newSuper);
+    NSLog(@"Patching KVO class %s", class_getName(class));
+    Method release = class_getInstanceMethod(class, @selector(release));
+    Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
+    
+    class_addMethod(class, @selector(MAZeroingWeakRef_KVO_original_release), method_getImplementation(release), method_getTypeEncoding(release));
+    class_addMethod(class, @selector(MAZeroingWeakRef_KVO_original_dealloc), method_getImplementation(dealloc), method_getTypeEncoding(dealloc));
+    
+    class_replaceMethod(class, @selector(release), (IMP)KVOSubclassRelease, method_getTypeEncoding(release));
+    class_replaceMethod(class, @selector(dealloc), (IMP)KVOSubclassDealloc, method_getTypeEncoding(dealloc));
 }
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 static void RegisterCustomSubclass(Class subclass, Class superclass)
 {
@@ -509,37 +525,14 @@ static Class CreateCustomSubclass(Class class, id obj)
 #endif
         return class;
     }
+    else if(IsKVOSubclass(obj))
+    {
+        PatchKVOSubclass(class);
+        return class;
+    }
     else
     {
-        Class classToSubclass = class;
-        Class newClass = nil;
-        BOOL isKVO = IsKVOSubclass(obj);
-        if(isKVO)
-        {
-            classToSubclass = class_getSuperclass(class);
-            newClass = [gCustomSubclassMap objectForKey: classToSubclass];
-        }
-        
-        if(!newClass)
-        {
-            newClass = CreatePlainCustomSubclass(classToSubclass);
-            if(isKVO)
-            {
-                SetSuperclass(class, newClass); // EVIL EVIL EVIL
-                
-                // if you thought setting the superclass was evil, wait until you get a load of this
-                // for some reason, KVO stores the superclass of the KVO class in the class's indexed ivars
-                // I don't know why they don't just use class_getSuperclass, but there we are
-                // this has to be set as well, otherwise KVO can skip over our dealloc, causing
-                // weak references not to get zeroed, doh!
-                id *kvoSuperclass = object_getIndexedIvars(class);
-                *kvoSuperclass = newClass;
-                
-                RegisterCustomSubclass(newClass, classToSubclass);
-            }
-        }
-        
-        return newClass;
+        return CreatePlainCustomSubclass(class);
     }
 }
 
