@@ -644,12 +644,19 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
         NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
         
         id target = [self target];
-        if(target)
+        if(target != nil) @synchronized(target)
         {
-            _MAZeroingWeakRefCleanupHelper *helper = [[_MAZeroingWeakRefCleanupHelper alloc] initWithRef: self target: target];
-            
             static void *associatedKey = &associatedKey;
-            objc_setAssociatedObject(target, associatedKey, helper, OBJC_ASSOCIATION_RETAIN);
+            NSMutableSet *cleanupHelpers = objc_getAssociatedObject(target, associatedKey);
+            
+            if(cleanupHelpers == nil)
+            {
+                cleanupHelpers = [NSMutableSet set];
+                objc_setAssociatedObject(target, associatedKey, cleanupHelpers, OBJC_ASSOCIATION_RETAIN);
+            }
+            
+            _MAZeroingWeakRefCleanupHelper *helper = [[_MAZeroingWeakRefCleanupHelper alloc] initWithRef: self target: target];
+            [cleanupHelpers addObject:helper];
             
             [helper release];
         }
