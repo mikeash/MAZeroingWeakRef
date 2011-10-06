@@ -301,12 +301,12 @@ static void KVOSubclassRelease(id self, SEL _cmd)
 
 static void KVOSubclassDealloc(id self, SEL _cmd)
 {
+    ClearWeakRefsForObject(self);
+    
     Class cls = object_getClass(self);
     [self removeObserver:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver] forKeyPath:@"MAZeroingWeakRef_KVO_dummy_observableProperty"];
-    object_setClass(self, cls);
     
-    ClearWeakRefsForObject(self);
-    IMP originalDealloc = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_dealloc));
+    IMP originalDealloc = class_getMethodImplementation(object_getClass(self), (cls == object_getClass(self) ? @selector(MAZeroingWeakRef_KVO_original_dealloc) : @selector(dealloc)));
     ((void (*)(id, SEL))originalDealloc)(self, _cmd);
 }
 
