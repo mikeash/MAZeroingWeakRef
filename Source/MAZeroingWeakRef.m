@@ -56,6 +56,13 @@
 @end
 #endif
 
+@interface NSObject (MAKVODummyObservedProperty)
+@property(nonatomic) int MAZeroingWeakRef_KVO_dummy_observableProperty;
+@end
+
+@interface MAZeroingWeakRef_KVO_dummy_observer : NSObject
++ (id)dummyObserver;
+@end
 
 @interface MAZeroingWeakRef ()
 
@@ -63,7 +70,6 @@
 - (void)_executeCleanupBlockWithTarget: (id)target;
 
 @end
-
 
 static id (*objc_loadWeak_fptr)(id *location);
 static id (*objc_storeWeak_fptr)(id *location, id obj);
@@ -295,6 +301,10 @@ static void KVOSubclassRelease(id self, SEL _cmd)
 
 static void KVOSubclassDealloc(id self, SEL _cmd)
 {
+    Class cls = object_getClass(self);
+    [self removeObserver:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver] forKeyPath:@"MAZeroingWeakRef_KVO_dummy_observableProperty"];
+    object_setClass(self, cls);
+    
     ClearWeakRefsForObject(self);
     IMP originalDealloc = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_dealloc));
     ((void (*)(id, SEL))originalDealloc)(self, _cmd);
@@ -486,7 +496,6 @@ static Class CreatePlainCustomSubclass(Class class)
 
 static void PatchKVOSubclass(Class class)
 {
-    NSLog(@"Patching KVO class %s", class_getName(class));
     Method release = class_getInstanceMethod(class, @selector(release));
     Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
     
@@ -527,6 +536,7 @@ static Class CreateCustomSubclass(Class class, id obj)
     }
     else if(IsKVOSubclass(obj))
     {
+        [obj addObserver:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver] forKeyPath:@"MAZeroingWeakRef_KVO_dummy_observableProperty" options:0x0 context:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver]];
         PatchKVOSubclass(class);
         return class;
     }
@@ -692,4 +702,31 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 #endif
 }
 
+@end
+
+@implementation MAZeroingWeakRef_KVO_dummy_observer
++ (id)dummyObserver;
+{
+    static id dummyObserver = nil;
+    
+    if(dummyObserver == nil)
+    {
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            dummyObserver = [[MAZeroingWeakRef_KVO_dummy_observer alloc] init];
+        });
+    }
+    
+    return dummyObserver;
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+}
+
+@end
+
+@implementation NSObject (MAKVODummyObservedProperty)
+- (int)MAZeroingWeakRef_KVO_dummy_observableProperty { return 0; }
+- (void)setMAZeroingWeakRef_KVO_dummy_observableProperty:(int)value { }
 @end
