@@ -14,6 +14,9 @@
 #import <mach/port.h>
 #import <pthread.h>
 
+#ifndef USE_ARC_FUNCTIONS_IF_AVAILABLE
+#define USE_ARC_FUNCTIONS_IF_AVAILABLE 1
+#endif
 
 /*
  The COREFOUNDATION_HACK_LEVEL macro allows you to control how much horrible CF
@@ -171,7 +174,7 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
         // the runtime functions
         Dl_info info;
         int success = dladdr(objc_allocateClassPair, &info);
-        if(success)
+        if(success && USE_ARC_FUNCTIONS_IF_AVAILABLE)
         {
             // note: we leak the handle because it's inconsequential
             // and technically, the fptrs would be invalid after a dlclose
