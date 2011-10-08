@@ -146,6 +146,7 @@ static pthread_mutex_t gMutex;
 
 static CFMutableDictionaryRef gObjectWeakRefsMap; // maps (non-retained) objects to CFMutableSetRefs containing weak refs
 
+static CFMutableSetRef gObservingInstances;
 static NSMutableSet *gCustomSubclasses;
 static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their custom subclasses
 
@@ -167,6 +168,7 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
         gObjectWeakRefsMap = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
         gCustomSubclasses = [[NSMutableSet alloc] init];
         gCustomSubclassMap = [[NSMutableDictionary alloc] init];
+        gObservingInstances = CFSetCreateMutable(NULL, 0, NULL);
         
         // see if the 10.7 ZWR runtime functions are available
         // nothing special about objc_allocateClassPair, it just
@@ -307,7 +309,12 @@ static void KVOSubclassDealloc(id self, SEL _cmd)
     ClearWeakRefsForObject(self);
     
     Class cls = object_getClass(self);
-    [self removeObserver:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver] forKeyPath:@"MAZeroingWeakRef_KVO_dummy_observableProperty"];
+    
+    if(CFSetContainsValue(gObservingInstances, self))
+    {
+        CFSetRemoveValue(gObservingInstances, self);
+        [self removeObserver:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver] forKeyPath:@"MAZeroingWeakRef_KVO_dummy_observableProperty"];
+    }
     
     IMP originalDealloc = class_getMethodImplementation(object_getClass(self), (cls == object_getClass(self) ? @selector(MAZeroingWeakRef_KVO_original_dealloc) : @selector(dealloc)));
     ((void (*)(id, SEL))originalDealloc)(self, _cmd);
@@ -539,7 +546,6 @@ static Class CreateCustomSubclass(Class class, id obj)
     }
     else if(IsKVOSubclass(obj))
     {
-        [obj addObserver:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver] forKeyPath:@"MAZeroingWeakRef_KVO_dummy_observableProperty" options:0x0 context:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver]];
         PatchKVOSubclass(class);
         return class;
     }
@@ -573,6 +579,16 @@ static void RegisterRef(MAZeroingWeakRef *ref, id target)
 {
     WhileLocked({
         EnsureCustomSubclass(target);
+        
+        // If the real class and the custom class of the target are the same
+        // then the object is a being observed by KVO
+        // Add a dummy observer to the target so KVO won't bypass the patched dealloc
+        if(object_getClass(target) == [gCustomSubclassMap objectForKey:object_getClass(target)] && !CFSetContainsValue(gObservingInstances, target))
+        {
+            CFSetAddValue(gObservingInstances, target);
+            [target addObserver:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver] forKeyPath:@"MAZeroingWeakRef_KVO_dummy_observableProperty" options:0x0 context:NULL];
+        }
+        
         AddWeakRefToObject(target, ref);
 #if COREFOUNDATION_HACK_LEVEL >= 3
         if(IsTollFreeBridged(object_getClass(target), target))
@@ -712,13 +728,10 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 {
     static id dummyObserver = nil;
     
-    if(dummyObserver == nil)
-    {
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            dummyObserver = [[MAZeroingWeakRef_KVO_dummy_observer alloc] init];
-        });
-    }
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        dummyObserver = [[MAZeroingWeakRef_KVO_dummy_observer alloc] init];
+    });
     
     return dummyObserver;
 }
