@@ -23,7 +23,7 @@
 
 @end
 
-void Check(void)
+static void Check(void)
 {
     [NSAutoreleasePool new];
     
