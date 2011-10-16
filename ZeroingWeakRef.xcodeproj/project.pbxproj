@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		C208C96011EBB8F100A8E38D /* MANotificationCenterAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = C208C95F11EBB8F100A8E38D /* MANotificationCenterAdditions.m */; };
+		C23912C3144A54F900AEFD01 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C23912C2144A54F900AEFD01 /* UIKit.framework */; };
+		C23912C4144A54F900AEFD01 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2D7540B11E2588600816068 /* Foundation.framework */; };
+		C23912C6144A54F900AEFD01 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C23912C5144A54F900AEFD01 /* CoreGraphics.framework */; };
+		C23912CE144A54F900AEFD01 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = C23912CD144A54F900AEFD01 /* main.m */; };
 		C25675F111E25C6A00CAB48E /* MAZeroingWeakRef.m in Sources */ = {isa = PBXBuildFile; fileRef = C25675F011E25C6A00CAB48E /* MAZeroingWeakRef.m */; };
 		C26F610511F207270080EC96 /* MAZeroingWeakProxy.m in Sources */ = {isa = PBXBuildFile; fileRef = C26F610411F207270080EC96 /* MAZeroingWeakProxy.m */; };
 		C2D7540C11E2588600816068 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2D7540B11E2588600816068 /* Foundation.framework */; };
@@ -31,6 +35,11 @@
 /* Begin PBXFileReference section */
 		C208C95E11EBB8F100A8E38D /* MANotificationCenterAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MANotificationCenterAdditions.h; sourceTree = "<group>"; };
 		C208C95F11EBB8F100A8E38D /* MANotificationCenterAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MANotificationCenterAdditions.m; sourceTree = "<group>"; };
+		C23912C0144A54F900AEFD01 /* NativeZWRCheckeriPhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NativeZWRCheckeriPhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C23912C2144A54F900AEFD01 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
+		C23912C5144A54F900AEFD01 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = Library/Frameworks/CoreGraphics.framework; sourceTree = DEVELOPER_DIR; };
+		C23912C9144A54F900AEFD01 /* NativeZWRCheckeriPhone-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "NativeZWRCheckeriPhone-Info.plist"; sourceTree = "<group>"; };
+		C23912CD144A54F900AEFD01 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		C25675EF11E25C6A00CAB48E /* MAZeroingWeakRef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAZeroingWeakRef.h; sourceTree = "<group>"; };
 		C25675F011E25C6A00CAB48E /* MAZeroingWeakRef.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAZeroingWeakRef.m; sourceTree = "<group>"; };
 		C26F610311F207270080EC96 /* MAZeroingWeakProxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAZeroingWeakProxy.h; sourceTree = "<group>"; };
@@ -46,6 +55,16 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		C23912BD144A54F900AEFD01 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C23912C3144A54F900AEFD01 /* UIKit.framework in Frameworks */,
+				C23912C4144A54F900AEFD01 /* Foundation.framework in Frameworks */,
+				C23912C6144A54F900AEFD01 /* CoreGraphics.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C2D7540411E2588600816068 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -57,10 +76,28 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C23912C7144A54F900AEFD01 /* NativeZWRCheckeriPhone */ = {
+			isa = PBXGroup;
+			children = (
+				C23912C8144A54F900AEFD01 /* Supporting Files */,
+			);
+			path = NativeZWRCheckeriPhone;
+			sourceTree = "<group>";
+		};
+		C23912C8144A54F900AEFD01 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				C23912C9144A54F900AEFD01 /* NativeZWRCheckeriPhone-Info.plist */,
+				C23912CD144A54F900AEFD01 /* main.m */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
 		C2D753FA11E2588500816068 = {
 			isa = PBXGroup;
 			children = (
 				C2D7540111E2588600816068 /* Source */,
+				C23912C7144A54F900AEFD01 /* NativeZWRCheckeriPhone */,
 				C2D7540811E2588600816068 /* Products */,
 				C2D7540A11E2588600816068 /* Frameworks */,
 				C2D7541111E2588600816068 /* Other Sources */,
@@ -89,6 +126,7 @@
 			isa = PBXGroup;
 			children = (
 				C2D7540711E2588600816068 /* ZeroingWeakRef */,
+				C23912C0144A54F900AEFD01 /* NativeZWRCheckeriPhone.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -97,6 +135,8 @@
 			isa = PBXGroup;
 			children = (
 				C2D7540B11E2588600816068 /* Foundation.framework */,
+				C23912C2144A54F900AEFD01 /* UIKit.framework */,
+				C23912C5144A54F900AEFD01 /* CoreGraphics.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -112,6 +152,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		C23912BF144A54F900AEFD01 /* NativeZWRCheckeriPhone */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C23912D5144A54F900AEFD01 /* Build configuration list for PBXNativeTarget "NativeZWRCheckeriPhone" */;
+			buildPhases = (
+				C23912BC144A54F900AEFD01 /* Sources */,
+				C23912BD144A54F900AEFD01 /* Frameworks */,
+				C23912BE144A54F900AEFD01 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NativeZWRCheckeriPhone;
+			productName = NativeZWRCheckeriPhone;
+			productReference = C23912C0144A54F900AEFD01 /* NativeZWRCheckeriPhone.app */;
+			productType = "com.apple.product-type.application";
+		};
 		C2D7540611E2588600816068 /* ZeroingWeakRef */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C2D7541511E2588600816068 /* Build configuration list for PBXNativeTarget "ZeroingWeakRef" */;
@@ -143,6 +200,7 @@
 				Japanese,
 				French,
 				German,
+				en,
 			);
 			mainGroup = C2D753FA11E2588500816068;
 			productRefGroup = C2D7540811E2588600816068 /* Products */;
@@ -150,11 +208,30 @@
 			projectRoot = "";
 			targets = (
 				C2D7540611E2588600816068 /* ZeroingWeakRef */,
+				C23912BF144A54F900AEFD01 /* NativeZWRCheckeriPhone */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		C23912BE144A54F900AEFD01 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
+		C23912BC144A54F900AEFD01 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C23912CE144A54F900AEFD01 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C2D7540311E2588600816068 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -171,6 +248,56 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		C23912D3144A54F900AEFD01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(DEVELOPER_FRAMEWORKS_DIR)\"",
+				);
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				INFOPLIST_FILE = "NativeZWRCheckeriPhone/NativeZWRCheckeriPhone-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		C23912D4144A54F900AEFD01 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(DEVELOPER_FRAMEWORKS_DIR)\"",
+				);
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				INFOPLIST_FILE = "NativeZWRCheckeriPhone/NativeZWRCheckeriPhone-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
 		C2D7541311E2588600816068 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -233,6 +360,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		C23912D5144A54F900AEFD01 /* Build configuration list for PBXNativeTarget "NativeZWRCheckeriPhone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C23912D3144A54F900AEFD01 /* Debug */,
+				C23912D4144A54F900AEFD01 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		C2D753FF11E2588500816068 /* Build configuration list for PBXProject "ZeroingWeakRef" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
