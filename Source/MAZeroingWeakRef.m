@@ -7,6 +7,10 @@
 
 #import "MAZeroingWeakRef.h"
 
+#import "MAZeroingWeakRefNativeZWRNotAllowedTable.h"
+
+#import <CommonCrypto/CommonDigest.h>
+
 #import <dlfcn.h>
 #import <libkern/OSAtomic.h>
 #import <objc/runtime.h>
@@ -465,6 +469,34 @@ static BOOL IsKVOSubclass(id obj)
 #endif
 }
 
+static BOOL HashPresentInTable(unsigned char *hash, int length, void **table)
+{
+    if(length == 0)
+        return NO;
+    
+    void *entry = table[hash[0]];
+    if(entry == NULL)
+        return NO;
+    else if(entry == _MAZeroingWeakRefClassPresentToken)
+        return YES;
+    else
+        return HashPresentInTable(hash + 1, length - 1, entry);
+}
+
+static BOOL CanNativeZWRClass(Class c)
+{
+    const char *name = class_getName(c);
+    unsigned char hash[CC_SHA1_DIGEST_LENGTH];
+    CC_SHA1(name, strlen(name), hash);
+    
+    return !HashPresentInTable(hash, CC_SHA1_DIGEST_LENGTH, _MAZeroingWeakRefClassNativeWeakReferenceNotAllowedTable);
+}
+
+static BOOL CanNativeZWR(id obj)
+{
+    return CanNativeZWRClass(object_getClass(obj));
+}
+
 static Class CreatePlainCustomSubclass(Class class)
 {
     NSString *newName = [NSString stringWithFormat: @"%s_MAZeroingWeakRefSubclass", class_getName(class)];
@@ -592,9 +624,10 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 {
     if((self = [self init]))
     {
-        if(objc_storeWeak_fptr)
+        if(objc_storeWeak_fptr && CanNativeZWR(target))
         {
             objc_storeWeak_fptr(&_target, target);
+            _nativeZWR = YES;
         }
         else
         {
@@ -607,7 +640,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (void)dealloc
 {
-    if(objc_storeWeak_fptr)
+    if(objc_storeWeak_fptr && _nativeZWR)
         objc_storeWeak_fptr(&_target, nil);
     else
         UnregisterRef(self);
@@ -630,7 +663,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
     [_cleanupBlock release];
     _cleanupBlock = block;
     
-    if(objc_loadWeak_fptr)
+    if(objc_loadWeak_fptr && _nativeZWR)
     {
         // wrap a pool around this code, otherwise it artificially extends
         // the lifetime of the target object
@@ -661,7 +694,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (id)target
 {
-    if(objc_loadWeak_fptr)
+    if(objc_loadWeak_fptr && _nativeZWR)
     {
         return objc_loadWeak_fptr(&_target);
     }

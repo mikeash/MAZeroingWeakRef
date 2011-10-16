@@ -11,6 +11,7 @@
 @interface MAZeroingWeakRef : NSObject
 {
     id _target;
+    BOOL _nativeZWR;
 #if NS_BLOCKS_AVAILABLE
     void (^_cleanupBlock)(id target);
 #endif

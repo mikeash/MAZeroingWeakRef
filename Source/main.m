@@ -492,6 +492,12 @@ static void TestKVOReleaseCrash(void)
 	[ref release];
 }
 
+static void TestNativeZWRFallback(void)
+{
+    NSPort *port = [NSPort port];
+    [MAZeroingWeakRef refWithTarget: port];
+}
+
 int main(int argc, const char * argv[])
 {
     WithPool(^{
@@ -515,6 +521,7 @@ int main(int argc, const char * argv[])
         TEST(TestClassForCoder);
         TEST(TestKVOReleaseNoCrash);
         TEST(TestKVOReleaseCrash);
+        TEST(TestNativeZWRFallback);
         
         NSString *message;
         if(gFailureCount)
