@@ -514,11 +514,17 @@ static BOOL HashPresentInTable(unsigned char *hash, int length, void **table)
 
 static BOOL CanNativeZWRClass(Class c)
 {
+    if(!c)
+        return YES;
+    
     const char *name = class_getName(c);
     unsigned char hash[CC_SHA1_DIGEST_LENGTH];
     CC_SHA1(name, strlen(name), hash);
     
-    return !HashPresentInTable(hash, CC_SHA1_DIGEST_LENGTH, _MAZeroingWeakRefClassNativeWeakReferenceNotAllowedTable);
+    if(HashPresentInTable(hash, CC_SHA1_DIGEST_LENGTH, _MAZeroingWeakRefClassNativeWeakReferenceNotAllowedTable))
+        return NO;
+    else
+        return CanNativeZWRClass(class_getSuperclass(c));
 }
 
 static BOOL CanNativeZWR(id obj)
