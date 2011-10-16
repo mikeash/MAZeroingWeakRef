@@ -106,8 +106,7 @@
 				C23912C9144A54F900AEFD01 /* NativeZWRCheckeriPhone-Info.plist */,
 				C23912CD144A54F900AEFD01 /* main.m */,
 			);
-			name = NativeZWRChecker;
-			path = NativeZWRCheckeriPhone;
+			path = NativeZWRChecker;
 			sourceTree = "<group>";
 		};
 		C2D753FA11E2588500816068 = {
@@ -459,6 +458,7 @@
 				C2414C17144A5F2C0029A0D4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		C2D753FF11E2588500816068 /* Build configuration list for PBXProject "ZeroingWeakRef" */ = {
 			isa = XCConfigurationList;
