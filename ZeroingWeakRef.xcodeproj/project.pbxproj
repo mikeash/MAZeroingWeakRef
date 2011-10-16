@@ -12,6 +12,9 @@
 		C23912C4144A54F900AEFD01 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2D7540B11E2588600816068 /* Foundation.framework */; };
 		C23912C6144A54F900AEFD01 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C23912C5144A54F900AEFD01 /* CoreGraphics.framework */; };
 		C23912CE144A54F900AEFD01 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = C23912CD144A54F900AEFD01 /* main.m */; };
+		C2414C0D144A5F2C0029A0D4 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2D7540B11E2588600816068 /* Foundation.framework */; };
+		C2414C18144A5F690029A0D4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = C23912CD144A54F900AEFD01 /* main.m */; };
+		C2414C1C144A5F8F0029A0D4 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2414C1B144A5F8F0029A0D4 /* AppKit.framework */; };
 		C25675F111E25C6A00CAB48E /* MAZeroingWeakRef.m in Sources */ = {isa = PBXBuildFile; fileRef = C25675F011E25C6A00CAB48E /* MAZeroingWeakRef.m */; };
 		C26F610511F207270080EC96 /* MAZeroingWeakProxy.m in Sources */ = {isa = PBXBuildFile; fileRef = C26F610411F207270080EC96 /* MAZeroingWeakProxy.m */; };
 		C2D7540C11E2588600816068 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2D7540B11E2588600816068 /* Foundation.framework */; };
@@ -21,6 +24,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		C2414C09144A5F2C0029A0D4 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		C2D7540511E2588600816068 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -40,6 +52,9 @@
 		C23912C5144A54F900AEFD01 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = Library/Frameworks/CoreGraphics.framework; sourceTree = DEVELOPER_DIR; };
 		C23912C9144A54F900AEFD01 /* NativeZWRCheckeriPhone-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "NativeZWRCheckeriPhone-Info.plist"; sourceTree = "<group>"; };
 		C23912CD144A54F900AEFD01 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		C2414C0B144A5F2C0029A0D4 /* NativeZWRCheckerMac */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NativeZWRCheckerMac; sourceTree = BUILT_PRODUCTS_DIR; };
+		C2414C19144A5F6F0029A0D4 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = SDKs/MacOSX10.7.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
+		C2414C1B144A5F8F0029A0D4 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = SDKs/MacOSX10.7.sdk/System/Library/Frameworks/AppKit.framework; sourceTree = DEVELOPER_DIR; };
 		C25675EF11E25C6A00CAB48E /* MAZeroingWeakRef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAZeroingWeakRef.h; sourceTree = "<group>"; };
 		C25675F011E25C6A00CAB48E /* MAZeroingWeakRef.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAZeroingWeakRef.m; sourceTree = "<group>"; };
 		C26F610311F207270080EC96 /* MAZeroingWeakProxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAZeroingWeakProxy.h; sourceTree = "<group>"; };
@@ -65,6 +80,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C2414C08144A5F2C0029A0D4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C2414C1C144A5F8F0029A0D4 /* AppKit.framework in Frameworks */,
+				C2414C0D144A5F2C0029A0D4 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C2D7540411E2588600816068 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -76,28 +100,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		C23912C7144A54F900AEFD01 /* NativeZWRCheckeriPhone */ = {
-			isa = PBXGroup;
-			children = (
-				C23912C8144A54F900AEFD01 /* Supporting Files */,
-			);
-			path = NativeZWRCheckeriPhone;
-			sourceTree = "<group>";
-		};
-		C23912C8144A54F900AEFD01 /* Supporting Files */ = {
+		C23912C7144A54F900AEFD01 /* NativeZWRChecker */ = {
 			isa = PBXGroup;
 			children = (
 				C23912C9144A54F900AEFD01 /* NativeZWRCheckeriPhone-Info.plist */,
 				C23912CD144A54F900AEFD01 /* main.m */,
 			);
-			name = "Supporting Files";
+			name = NativeZWRChecker;
+			path = NativeZWRCheckeriPhone;
 			sourceTree = "<group>";
 		};
 		C2D753FA11E2588500816068 = {
 			isa = PBXGroup;
 			children = (
+				C2414C1B144A5F8F0029A0D4 /* AppKit.framework */,
+				C2414C19144A5F6F0029A0D4 /* Cocoa.framework */,
 				C2D7540111E2588600816068 /* Source */,
-				C23912C7144A54F900AEFD01 /* NativeZWRCheckeriPhone */,
+				C23912C7144A54F900AEFD01 /* NativeZWRChecker */,
 				C2D7540811E2588600816068 /* Products */,
 				C2D7540A11E2588600816068 /* Frameworks */,
 				C2D7541111E2588600816068 /* Other Sources */,
@@ -127,6 +146,7 @@
 			children = (
 				C2D7540711E2588600816068 /* ZeroingWeakRef */,
 				C23912C0144A54F900AEFD01 /* NativeZWRCheckeriPhone.app */,
+				C2414C0B144A5F2C0029A0D4 /* NativeZWRCheckerMac */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -169,6 +189,23 @@
 			productReference = C23912C0144A54F900AEFD01 /* NativeZWRCheckeriPhone.app */;
 			productType = "com.apple.product-type.application";
 		};
+		C2414C0A144A5F2C0029A0D4 /* NativeZWRCheckerMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C2414C15144A5F2C0029A0D4 /* Build configuration list for PBXNativeTarget "NativeZWRCheckerMac" */;
+			buildPhases = (
+				C2414C07144A5F2C0029A0D4 /* Sources */,
+				C2414C08144A5F2C0029A0D4 /* Frameworks */,
+				C2414C09144A5F2C0029A0D4 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NativeZWRCheckerMac;
+			productName = NativeZWRCheckerMac;
+			productReference = C2414C0B144A5F2C0029A0D4 /* NativeZWRCheckerMac */;
+			productType = "com.apple.product-type.tool";
+		};
 		C2D7540611E2588600816068 /* ZeroingWeakRef */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C2D7541511E2588600816068 /* Build configuration list for PBXNativeTarget "ZeroingWeakRef" */;
@@ -209,6 +246,7 @@
 			targets = (
 				C2D7540611E2588600816068 /* ZeroingWeakRef */,
 				C23912BF144A54F900AEFD01 /* NativeZWRCheckeriPhone */,
+				C2414C0A144A5F2C0029A0D4 /* NativeZWRCheckerMac */,
 			);
 		};
 /* End PBXProject section */
@@ -229,6 +267,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				C23912CE144A54F900AEFD01 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C2414C07144A5F2C0029A0D4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C2414C18144A5F690029A0D4 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -295,6 +341,43 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		C2414C16144A5F2C0029A0D4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		C2414C17144A5F2C0029A0D4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
@@ -368,6 +451,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		C2414C15144A5F2C0029A0D4 /* Build configuration list for PBXNativeTarget "NativeZWRCheckerMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C2414C16144A5F2C0029A0D4 /* Debug */,
+				C2414C17144A5F2C0029A0D4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		C2D753FF11E2588500816068 /* Build configuration list for PBXProject "ZeroingWeakRef" */ = {
 			isa = XCConfigurationList;
