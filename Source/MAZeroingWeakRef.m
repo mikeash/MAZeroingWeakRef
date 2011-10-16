@@ -471,16 +471,25 @@ static BOOL IsKVOSubclass(id obj)
 
 static BOOL HashPresentInTable(unsigned char *hash, int length, void **table)
 {
-    if(length == 0)
-        return NO;
-    
-    void *entry = table[hash[0]];
-    if(entry == NULL)
-        return NO;
-    else if(entry == _MAZeroingWeakRefClassPresentToken)
-        return YES;
-    else
-        return HashPresentInTable(hash + 1, length - 1, entry);
+    while(length)
+    {
+        void *entry = table[hash[0]];
+        if(entry == NULL)
+        {
+            return NO;
+        }
+        else if(entry == _MAZeroingWeakRefClassPresentToken)
+        {
+            return YES;
+        }
+        else
+        {
+            hash++;
+            length--;
+            table = entry;
+        }
+    }
+    return NO;
 }
 
 static BOOL CanNativeZWRClass(Class c)
