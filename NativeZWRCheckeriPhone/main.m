@@ -10,6 +10,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 #import <dispatch/dispatch.h>
+#import <dlfcn.h>
 #import <objc/runtime.h>
 #import <stdio.h>
 #import <stdlib.h>
@@ -22,7 +23,7 @@
 
 @end
 
-int main(int argc, char *argv[])
+void Check(void)
 {
     [NSAutoreleasePool new];
     
@@ -80,10 +81,32 @@ int main(int argc, char *argv[])
         "NSHTTPCookie",
         "_PFEncodedString",
         "NSEPSImageRep",
-        "_PFEncodedArray"
+        "_PFEncodedArray",
+        "DOMObject",
+        "UIProgressBar",
+        "UIWebTextView",
+        "BasicAccount",
+        "UIWebBrowserView",
+        "UIPasteboard",
+        "_UIDefinitionService",
+        "_UIDateLabelCache",
+        "ABPersonLinker",
+        "WebInspectorWindowController",
+        "UIPrintInteractionController",
+        "_TMBlockDebugger",
+        "UIDocument",
+        "UISplitViewController",
+        "MCDependencyManager",
+        "DADConnection",
+        "UIApplication",
+        "UIPrintInfo",
+        "UIPopoverController",
+        "UIURLResolver"
     };
     
-    NSApplicationLoad();
+    void (*NSApplicationLoadFptr)(void) = dlsym(RTLD_DEFAULT, "NSApplicationLoad");
+    if(NSApplicationLoadFptr)
+        NSApplicationLoadFptr();
     
     int count = objc_getClassList(NULL, 0);
     Class *classes = malloc(count * sizeof(*classes));
@@ -133,4 +156,18 @@ int main(int argc, char *argv[])
     fprintf(stderr, "done!\n");
     
     NSLog(@"%@", results);
+}
+
+int main(int argc, char *argv[])
+{
+    int (*UIApplicationMainFptr)(int, char **, void *, void *) = dlsym(RTLD_DEFAULT, "UIApplicationMain");
+    if(UIApplicationMainFptr)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^{ Check(); });
+        UIApplicationMainFptr(argc, argv, NULL, NULL);
+    }
+    else
+    {
+        Check();
+    }
 }
