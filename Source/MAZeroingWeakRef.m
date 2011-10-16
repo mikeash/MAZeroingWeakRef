@@ -469,6 +469,26 @@ static BOOL IsKVOSubclass(id obj)
 #endif
 }
 
+// The native ZWR capability table is conceptually a set of SHA1 hashes.
+// Hashes are used instead of class names because the table is large and
+// contains a lot of private classes. Embedding private class names in
+// the binary is likely to cause problems with app review. Manually
+// removing all private classes from the table is a lot of work. Using
+// hashes allows for reasonably quick checks and no private API names.
+// It's implemented as a tree of tables, where each individual table
+// maps to a single byte. The top level of the tree is a 256-entry table
+// whose entries are either NULL (for leading bytes which aren't present
+// at all) or point to another 256-entry table. This continues 20 levels
+// deep (the number of bytes in a SHA1 hash), at which point the special
+// pointer _MAZeroingWeakRefClassPresentToken is used to indicate the
+// final bytes which are present. HashPresentInTable therefore checks
+// the first byte of the hash to see if there's a table for it in the
+// global table, checks the second byte to see if there's a table in
+// the child table, etc., all the way down until it hits the end. This
+// design makes for a good compromise between initialization efficiency
+// (the table is completely static data) and runtime efficiency (the
+// entry check does a bit of pointer chasing but is just 20 checks,
+// and the common case of no entry usually exits really early).
 static BOOL HashPresentInTable(unsigned char *hash, int length, void **table)
 {
     while(length)
