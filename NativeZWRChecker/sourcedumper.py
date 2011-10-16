@@ -1142,13 +1142,18 @@ def PrintArray(hashesToNames, indent):
             for hash in matching:
                 if len(hash) > 1:
                     d[hash[1:]] = hashesToNames[hash]
-            if d:
-                print '%s[0x%x] = (void *[256]) { // %d' % (indentStr, byte, indent)
+            if len(d) > 1:
+                print '%s[0x%x] = { 1, (struct _NativeZWRTableEntry[256]) { // %d' % (indentStr, byte, indent)
                 PrintArray(d, indent + 1)
-                print indentStr + '},'
+                print indentStr + '}},'
+            elif d:
+                hash = d.keys()[0]
+                hashBytes = ['0x%x' % ord(x) for x in hash]
+                hashC = ', '.join(hashBytes)
+                print '%s[0x%x] = { 0, (unsigned char[]){ %s } }, // %s' % (indentStr, byte, hashC, d[hash])
             else:
                 for hash in matching:
-                    print '%s[0x%x] = &_MAZeroingWeakRefClassPresentToken, // %s' % (indentStr, byte, hashesToNames[hash])
+                    print '%s[0x%x] = { 0, &_MAZeroingWeakRefClassPresentToken }, // %s' % (indentStr, byte, hashesToNames[hash])
                 
     
 
@@ -1157,6 +1162,7 @@ for x in iOSPlist + MacPlist:
     hashesToNames[x['sha'].data] = x['name']
 
 print 'static void *_MAZeroingWeakRefClassPresentToken = &_MAZeroingWeakRefClassPresentToken;'
-print 'static void *_MAZeroingWeakRefClassNativeWeakReferenceNotAllowedTable[256] = {'
+print 'struct _NativeZWRTableEntry { BOOL isTable; void *ptr; };'
+print 'static struct _NativeZWRTableEntry _MAZeroingWeakRefClassNativeWeakReferenceNotAllowedTable[256] = {'
 PrintArray(hashesToNames, 1)
 print '};'

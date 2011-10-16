@@ -476,37 +476,32 @@ static BOOL IsKVOSubclass(id obj)
 // removing all private classes from the table is a lot of work. Using
 // hashes allows for reasonably quick checks and no private API names.
 // It's implemented as a tree of tables, where each individual table
-// maps to a single byte. The top level of the tree is a 256-entry table
-// whose entries are either NULL (for leading bytes which aren't present
-// at all) or point to another 256-entry table. This continues 20 levels
-// deep (the number of bytes in a SHA1 hash), at which point the special
-// pointer _MAZeroingWeakRefClassPresentToken is used to indicate the
-// final bytes which are present. HashPresentInTable therefore checks
-// the first byte of the hash to see if there's a table for it in the
-// global table, checks the second byte to see if there's a table in
-// the child table, etc., all the way down until it hits the end. This
-// design makes for a good compromise between initialization efficiency
-// (the table is completely static data) and runtime efficiency (the
-// entry check does a bit of pointer chasing but is just 20 checks,
-// and the common case of no entry usually exits really early).
-static BOOL HashPresentInTable(unsigned char *hash, int length, void **table)
+// maps to a single byte. The top level of the tree is a 256-entry table.
+// Table entries are a NULL pointer for leading bytes which aren't present
+// at all. Other table entries can either contain a pointer to another
+// table (in which case the process continues recursively), or they can
+// contain a pointer to a single hash. In this second case, this indicates
+// that this hash is the only one present in the table with that prefix
+// and so a simple comparison can be used to check for membership at
+// that point.
+static BOOL HashPresentInTable(unsigned char *hash, int length, struct _NativeZWRTableEntry *table)
 {
     while(length)
     {
-        void *entry = table[hash[0]];
-        if(entry == NULL)
+        struct _NativeZWRTableEntry entry = table[hash[0]];
+        if(entry.ptr == NULL)
         {
             return NO;
         }
-        else if(entry == _MAZeroingWeakRefClassPresentToken)
+        else if(!entry.isTable)
         {
-            return YES;
+            return memcmp(entry.ptr, hash + 1, length - 1) == 0;
         }
         else
         {
             hash++;
             length--;
-            table = entry;
+            table = entry.ptr;
         }
     }
     return NO;
