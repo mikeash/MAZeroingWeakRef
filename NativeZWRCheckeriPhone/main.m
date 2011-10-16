@@ -156,7 +156,8 @@ static void Check(void)
     }
     fprintf(stderr, "done!\n");
     
-    NSLog(@"%@", results);
+    NSData *data = [NSPropertyListSerialization dataFromPropertyList: results format: NSPropertyListXMLFormat_v1_0 errorDescription: NULL];
+    [[NSFileHandle fileHandleWithStandardOutput] writeData: data];
 }
 
 int main(int argc, char *argv[])
