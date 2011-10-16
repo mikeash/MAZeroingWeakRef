@@ -101,7 +101,8 @@ void Check(void)
         "UIApplication",
         "UIPrintInfo",
         "UIPopoverController",
-        "UIURLResolver"
+        "UIURLResolver",
+        "NSSpeechSynthesizer"
     };
     
     void (*NSApplicationLoadFptr)(void) = dlsym(RTLD_DEFAULT, "NSApplicationLoad");
