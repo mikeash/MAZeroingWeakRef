@@ -67,6 +67,7 @@
 		C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAWeakArray.m; sourceTree = "<group>"; };
 		C2DF1F2911ED2C4700EFC8AE /* MAWeakDictionary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAWeakDictionary.h; sourceTree = "<group>"; };
 		C2DF1F2A11ED2C4700EFC8AE /* MAWeakDictionary.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAWeakDictionary.m; sourceTree = "<group>"; };
+		C2EB6F77144B37A400278198 /* MAZeroingWeakRefNativeZWRNotAllowedTable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAZeroingWeakRefNativeZWRNotAllowedTable.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,6 +137,7 @@
 				C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */,
 				C2DF1F2911ED2C4700EFC8AE /* MAWeakDictionary.h */,
 				C2DF1F2A11ED2C4700EFC8AE /* MAWeakDictionary.m */,
+				C2EB6F77144B37A400278198 /* MAZeroingWeakRefNativeZWRNotAllowedTable.h */,
 			);
 			path = Source;
 			sourceTree = "<group>";
