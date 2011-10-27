@@ -14,6 +14,7 @@
 		C2D7541011E2588600816068 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = C2D7540F11E2588600816068 /* main.m */; };
 		C2DF1F2611ED2C1300EFC8AE /* MAWeakArray.m in Sources */ = {isa = PBXBuildFile; fileRef = C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */; };
 		C2DF1F2B11ED2C4700EFC8AE /* MAWeakDictionary.m in Sources */ = {isa = PBXBuildFile; fileRef = C2DF1F2A11ED2C4700EFC8AE /* MAWeakDictionary.m */; };
+		C65F68161459990300D3A417 /* NSTimer+MAWeakTimer.m in Sources */ = {isa = PBXBuildFile; fileRef = C65F68151459990300D3A417 /* NSTimer+MAWeakTimer.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -43,6 +44,8 @@
 		C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAWeakArray.m; sourceTree = "<group>"; };
 		C2DF1F2911ED2C4700EFC8AE /* MAWeakDictionary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MAWeakDictionary.h; sourceTree = "<group>"; };
 		C2DF1F2A11ED2C4700EFC8AE /* MAWeakDictionary.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MAWeakDictionary.m; sourceTree = "<group>"; };
+		C65F68141459990300D3A417 /* NSTimer+MAWeakTimer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSTimer+MAWeakTimer.h"; sourceTree = "<group>"; };
+		C65F68151459990300D3A417 /* NSTimer+MAWeakTimer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSTimer+MAWeakTimer.m"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +84,8 @@
 				C2DF1F2511ED2C1300EFC8AE /* MAWeakArray.m */,
 				C2DF1F2911ED2C4700EFC8AE /* MAWeakDictionary.h */,
 				C2DF1F2A11ED2C4700EFC8AE /* MAWeakDictionary.m */,
+				C65F68141459990300D3A417 /* NSTimer+MAWeakTimer.h */,
+				C65F68151459990300D3A417 /* NSTimer+MAWeakTimer.m */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -165,6 +170,7 @@
 				C2DF1F2611ED2C1300EFC8AE /* MAWeakArray.m in Sources */,
 				C2DF1F2B11ED2C4700EFC8AE /* MAWeakDictionary.m in Sources */,
 				C26F610511F207270080EC96 /* MAZeroingWeakProxy.m in Sources */,
+				C65F68161459990300D3A417 /* NSTimer+MAWeakTimer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
