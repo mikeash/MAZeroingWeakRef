@@ -17,16 +17,15 @@
     // Use a proxy so the message sent by the timer is passed down directly to the target
     MAZeroingWeakProxy *proxy = [MAZeroingWeakProxy proxyWithTarget:target];
     
+    // The timer releases its target as soon as it is invalidated
+    // thus releasing the proxy object, the proxy object will then release its cleanup block
+    // releasing the cleanup block will end in releasing the timer
+    // which in turn will remove all traces of renegade objects from memory
     NSTimer *timer = [self scheduledTimerWithTimeInterval:seconds target:proxy selector:aSelector userInfo:userInfo repeats:repeats];
-    
-    // Weak retain of the timer to avoid cyclic reference which would prevent the timer from being deallocated until the target is deallocated
-    MAWeakDeclare(timer);
     
     [proxy setCleanupBlock:
      ^(id target)
      {
-         MAWeakImportReturn(timer);
-         
          [timer invalidate];
      }];
     
@@ -38,16 +37,15 @@
     // Use a proxy so the message sent by the timer is passed down directly to the target
     MAZeroingWeakProxy *proxy = [MAZeroingWeakProxy proxyWithTarget:target];
     
+    // The timer releases its target as soon as it is invalidated
+    // thus releasing the proxy object, the proxy object will then release its cleanup block
+    // releasing the cleanup block will end in releasing the timer
+    // which in turn will remove all traces of renegade objects from memory
     NSTimer *timer = [self timerWithTimeInterval:seconds target:proxy selector:aSelector userInfo:userInfo repeats:repeats];
-    
-    // Weak retain of the timer to avoid cyclic reference which would prevent the timer from being deallocated until the target is deallocated
-    MAWeakDeclare(timer);
     
     [proxy setCleanupBlock:
      ^(id target)
      {
-         MAWeakImportReturn(timer);
-         
          [timer invalidate];
      }];
     

@@ -37,7 +37,7 @@
  objects and will assert if trying to make a ZWR to one
  */
 #ifndef COREFOUNDATION_HACK_LEVEL
-#define COREFOUNDATION_HACK_LEVEL 1
+#define COREFOUNDATION_HACK_LEVEL 0
 #endif
 
 /*
