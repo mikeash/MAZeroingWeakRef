@@ -48,7 +48,7 @@
  0 - No hackery, uses the KVO overridden -class to check.
  */
 #ifndef KVO_HACK_LEVEL
-#define KVO_HACK_LEVEL 1
+#define KVO_HACK_LEVEL 0
 #endif
 
 #if KVO_HACK_LEVEL >= 1
