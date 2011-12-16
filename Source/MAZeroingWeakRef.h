@@ -57,21 +57,20 @@
 
 #define MAWeakDeclare(var)
 #define MAWeakImport(var)            __weak_capture(var)
-#define MAWeakImportReturn(var, ...) MAWeakImport(var); do { if(var == nil) return __VA_ARGS__; } while(NO)
 
 #elif __has_feature(objc_arc_weak)
 
 #define MAWeakDeclare(var)           __weak __typeof__((var)) MAWeakVar(var) = var
 #define MAWeakImport(var)            __typeof__((MAWeakVar(var))) var = MAWeakVar(var)
-#define MAWeakImportReturn(var, ...) MAWeakImport(var); do { if(var == nil) return __VA_ARGS__; } while(NO)
 
 #else
 
 #define MAWeakDeclare(var)           __typeof__((var)) MAWeakVar(var) = (id)[MAZeroingWeakRef refWithTarget:var]
 #define MAWeakImport(var)            __typeof__((MAWeakVar(var))) var = [(MAZeroingWeakRef *)MAWeakVar(var) target]
-#define MAWeakImportReturn(var, ...) MAWeakImport(var); do { if(var == nil) return __VA_ARGS__; } while(NO)
 
 #endif
+
+#define MAWeakImportReturn(var, ...) MAWeakImport(var); do { if(var == nil) return __VA_ARGS__; } while(NO)
 
 #define MAWeakSelfDeclare()          MAWeakDeclare(self)
 #define MAWeakSelfImport()           MAWeakImport(self)
