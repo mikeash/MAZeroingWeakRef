@@ -4,6 +4,7 @@
 *.pyc 
 *~.nib/
 build/*
+xcuserdata/
  
 # osx noise
 .DS_Store
