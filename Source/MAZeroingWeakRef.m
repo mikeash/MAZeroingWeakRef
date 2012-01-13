@@ -52,6 +52,19 @@
 #define KVO_HACK_LEVEL 1
 #endif
 
+/*
+ The USE_BLOCKS_BASED_LOCKING macro allows control on the code structure used
+ during lock checking. You want to disable blocks if you want your app to work
+ on iOS 3.x devices. iOS 4.x and above can use blocks.
+
+ 1 - Use blocks for lock checks.
+
+ 0 - Don't use blocks for lock checks.
+ */
+#ifndef USE_BLOCKS_BASED_LOCKING
+#define USE_BLOCKS_BASED_LOCKING 1
+#endif
+
 #if KVO_HACK_LEVEL >= 1
 @interface NSObject (KVOPrivateMethod)
 
@@ -196,7 +209,6 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
     }
 }
 
-#define USE_BLOCKS_BASED_LOCKING 1
 #if USE_BLOCKS_BASED_LOCKING
 #define BLOCK_QUALIFIER __block
 static void WhileLocked(void (^block)(void))

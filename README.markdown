@@ -18,6 +18,8 @@ App Store
 
 For iOS work, or Mac App Store work, you will probably want to set both COREFOUNDATION_HACK_LEVEL and KVO_HACK_LEVEL to `0`. In this mode, MAZeroingWeakRef uses no private APIs.
 
+Also, if you need your app to run on iOS 3.x you need to disable blocks based code setting USE_BLOCKS_BASED_LOCKING to `0`.
+
 Source Code
 -----------
 
