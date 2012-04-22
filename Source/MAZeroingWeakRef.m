@@ -38,7 +38,7 @@
  objects and will assert if trying to make a ZWR to one
  */
 #ifndef COREFOUNDATION_HACK_LEVEL
-#define COREFOUNDATION_HACK_LEVEL 1
+#define COREFOUNDATION_HACK_LEVEL 0
 #endif
 
 /*
@@ -49,7 +49,7 @@
  0 - No hackery, uses the KVO overridden -class to check.
  */
 #ifndef KVO_HACK_LEVEL
-#define KVO_HACK_LEVEL 1
+#define KVO_HACK_LEVEL 0
 #endif
 
 /*
