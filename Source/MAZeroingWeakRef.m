@@ -332,7 +332,7 @@ static void KVOSubclassRemoveObserverForKeyPathContext(id self, SEL _cmd, id obs
 {
     WhileLocked({
         IMP originalIMP = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:context:));
-        ((void (*)(id, SEL, id, NSString *, context))originalIMP)(self, _cmd, observer, keyPath, context);
+        ((void (*)(id, SEL, id, NSString *, void *))originalIMP)(self, _cmd, observer, keyPath, context);
         
         EnsureCustomSubclass(self);
     });
