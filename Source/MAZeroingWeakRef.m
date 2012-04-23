@@ -584,7 +584,6 @@ static void PatchKVOSubclass(Class class)
 {
 //    NSLog(@"Patching KVO class %s", class_getName(class));
     Method removeObserverForKeyPath = class_getInstanceMethod(class, @selector(removeObserver:forKeyPath:));
-    Method removeObserverForKeyPathContext = class_getInstanceMethod(class, @selector(removeObserver:forKeyPath:context:));
     Method release = class_getInstanceMethod(class, @selector(release));
     Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
     
@@ -592,10 +591,6 @@ static void PatchKVOSubclass(Class class)
                     @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:),
                     method_getImplementation(removeObserverForKeyPath),
                     method_getTypeEncoding(removeObserverForKeyPath));
-    class_addMethod(class,
-                    @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:context:),
-                    method_getImplementation(removeObserverForKeyPathContext),
-                    method_getTypeEncoding(removeObserverForKeyPathContext));
     class_addMethod(class, @selector(MAZeroingWeakRef_KVO_original_release), method_getImplementation(release), method_getTypeEncoding(release));
     class_addMethod(class, @selector(MAZeroingWeakRef_KVO_original_dealloc), method_getImplementation(dealloc), method_getTypeEncoding(dealloc));
     
@@ -603,12 +598,23 @@ static void PatchKVOSubclass(Class class)
                         @selector(removeObserver:forKeyPath:),
                         (IMP)KVOSubclassRemoveObserverForKeyPath,
                         method_getTypeEncoding(removeObserverForKeyPath));
-    class_replaceMethod(class,
-                        @selector(removeObserver:forKeyPath:context:),
-                        (IMP)KVOSubclassRemoveObserverForKeyPathContext,
-                        method_getTypeEncoding(removeObserverForKeyPathContext));
     class_replaceMethod(class, @selector(release), (IMP)KVOSubclassRelease, method_getTypeEncoding(release));
     class_replaceMethod(class, @selector(dealloc), (IMP)KVOSubclassDealloc, method_getTypeEncoding(dealloc));
+    
+    // The context variant is only available on 10.7/iOS5+, so only perform that override if the method actually exists.
+    Method removeObserverForKeyPathContext = class_getInstanceMethod(class, @selector(removeObserver:forKeyPath:context:));
+    if(removeObserverForKeyPathContext)
+    {
+        class_addMethod(class,
+                        @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:context:),
+                        method_getImplementation(removeObserverForKeyPathContext),
+                        method_getTypeEncoding(removeObserverForKeyPathContext));
+        class_replaceMethod(class,
+                            @selector(removeObserver:forKeyPath:context:),
+                            (IMP)KVOSubclassRemoveObserverForKeyPathContext,
+                            method_getTypeEncoding(removeObserverForKeyPathContext));
+        
+    }
 }
 
 static void RegisterCustomSubclass(Class subclass, Class superclass)
