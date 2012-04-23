@@ -498,6 +498,18 @@ static void TestNativeZWRFallback(void)
     [MAZeroingWeakRef refWithTarget: port];
 }
 
+static void TestKVORemovalCrash(void)
+{
+    NSObject *obj = [[NSObject alloc] init];
+    NSObject *observer = [[NSObject alloc] init];
+    [obj addObserver:observer forKeyPath:@"description" options:NSKeyValueObservingOptionNew context:nil];
+    MAZeroingWeakRef *weakRef = [MAZeroingWeakRef refWithTarget:obj];
+    [obj removeObserver:observer forKeyPath:@"description"];
+    [obj release];
+    NSLog(@"weakRef %@", weakRef.target);
+    [observer release];
+}
+
 int main(int argc, const char * argv[])
 {
     WithPool(^{
@@ -522,6 +534,7 @@ int main(int argc, const char * argv[])
         TEST(TestKVOReleaseNoCrash);
         TEST(TestKVOReleaseCrash);
         TEST(TestNativeZWRFallback);
+        TEST(TestKVORemovalCrash);
         
         NSString *message;
         if(gFailureCount)

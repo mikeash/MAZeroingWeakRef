@@ -74,6 +74,8 @@
 #endif
 
 
+static void EnsureCustomSubclass(id obj);
+
 @interface MAZeroingWeakRef ()
 
 - (void)_zeroTarget;
@@ -314,6 +316,16 @@ static void KVOSubclassDealloc(id self, SEL _cmd)
     ClearWeakRefsForObject(self);
     IMP originalDealloc = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_dealloc));
     ((void (*)(id, SEL))originalDealloc)(self, _cmd);
+}
+
+static void KVOSubclassRemoveObserverForKeyPath(id self, SEL _cmd, id observer, NSString *keyPath)
+{
+    WhileLocked({
+        IMP originalIMP = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:));
+        ((void (*)(id, SEL, id, NSString *))originalIMP)(self, _cmd, observer, keyPath);
+        
+        EnsureCustomSubclass(self);
+    });
 }
 
 #if COREFOUNDATION_HACK_LEVEL >= 3
@@ -560,13 +572,22 @@ static Class CreatePlainCustomSubclass(Class class)
 
 static void PatchKVOSubclass(Class class)
 {
-    NSLog(@"Patching KVO class %s", class_getName(class));
+//    NSLog(@"Patching KVO class %s", class_getName(class));
+    Method removeObserverForKeyPath = class_getInstanceMethod(class, @selector(removeObserver:forKeyPath:));
     Method release = class_getInstanceMethod(class, @selector(release));
     Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
     
+    class_addMethod(class,
+                    @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:),
+                    method_getImplementation(removeObserverForKeyPath),
+                    method_getTypeEncoding(removeObserverForKeyPath));
     class_addMethod(class, @selector(MAZeroingWeakRef_KVO_original_release), method_getImplementation(release), method_getTypeEncoding(release));
     class_addMethod(class, @selector(MAZeroingWeakRef_KVO_original_dealloc), method_getImplementation(dealloc), method_getTypeEncoding(dealloc));
     
+    class_replaceMethod(class,
+                        @selector(removeObserver:forKeyPath:),
+                        (IMP)KVOSubclassRemoveObserverForKeyPath,
+                        method_getTypeEncoding(removeObserverForKeyPath));
     class_replaceMethod(class, @selector(release), (IMP)KVOSubclassRelease, method_getTypeEncoding(release));
     class_replaceMethod(class, @selector(dealloc), (IMP)KVOSubclassDealloc, method_getTypeEncoding(dealloc));
 }
