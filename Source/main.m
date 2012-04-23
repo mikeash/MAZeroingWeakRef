@@ -367,7 +367,7 @@ static void TestWeakProxy(void)
     }
     
     NSMutableString *str = [[NSMutableString alloc] init];
-    NSMutableString *proxy = [[MAZeroingWeakProxy alloc] initWithTarget: str];
+    NSMutableString *proxy = (NSMutableString *)[[MAZeroingWeakProxy alloc] initWithTarget: str];
     
     WithPool(^{
         TEST_ASSERT([proxy isEqual: @""]);
