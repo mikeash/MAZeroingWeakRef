@@ -63,24 +63,6 @@
 
 @end
 
-@interface OtherKVOTarget : NSObject {} @end
-@implementation OtherKVOTarget
-
-- (void)setKey: (id)newValue
-{
-}
-
-- (id)key
-{
-    return nil;
-}
-
-- (void)observeValueForKeyPath: (NSString *)keyPath ofObject: (id)object change: (NSDictionary *)change context: (void *)context
-{
-}
-
-@end
-
 static void WithPool(void (^block)(void))
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
@@ -264,7 +246,6 @@ static void TestNSConstantTarget(void)
       NSString *str = [[NSMutableString alloc] initWithString: @"Not Constant String"];
       MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: str];
       [ref release];
-      [str release];
     });
 }
 
@@ -386,7 +367,7 @@ static void TestWeakProxy(void)
     }
     
     NSMutableString *str = [[NSMutableString alloc] init];
-    NSMutableString *proxy = (id)[[MAZeroingWeakProxy alloc] initWithTarget: str];
+    NSMutableString *proxy = (NSMutableString *)[[MAZeroingWeakProxy alloc] initWithTarget: str];
     
     WithPool(^{
         TEST_ASSERT([proxy isEqual: @""]);
@@ -457,8 +438,6 @@ static void TestKVOTarget(void)
     MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
     [target setKey: @"value"];
     [ref release];
-    [target removeObserver:target forKeyPath:@"key"];
-    [target release];
 }
 
 static void TestKVOMultiLevelTarget(void)
@@ -469,7 +448,6 @@ static void TestKVOMultiLevelTarget(void)
     MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
 	[target removeObserver:target forKeyPath:@"key.whatever"];
     [ref release];
-    [target release];
 }
 
 static void TestClassForCoder(void)
@@ -478,7 +456,6 @@ static void TestClassForCoder(void)
     TEST_ASSERT([obj classForCoder] == [NSObject class]);
     [[[MAZeroingWeakRef alloc] initWithTarget: obj] autorelease];
     TEST_ASSERT([obj classForCoder] == [NSObject class]);
-    [obj release];
 }
 
 static void TestKVOReleaseNoCrash(void)
@@ -515,88 +492,22 @@ static void TestKVOReleaseCrash(void)
 	[ref release];
 }
 
-static void TestKVOObserveBeforeWeakRef(void)
+static void TestNativeZWRFallback(void)
 {
-	KVOTarget *target = [[KVOTarget alloc] init];
-    
-	[target addObserver: target forKeyPath: @"key" options: 0 context: NULL];
-    
-	MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
-    
-	[target setKey: @"value"];
-    
-    WithPool(^{
-        TEST_ASSERT([ref target] == target);
-    });
-    
-    [target removeObserver:target forKeyPath:@"key"];
-    
-	[target release];
-    
-    WithPool(^{
-        TEST_ASSERT([ref target] == nil);
-    });
-	[ref release];
+    NSPort *port = [NSPort port];
+    [MAZeroingWeakRef refWithTarget: port];
 }
 
-static void TestKVOObserveAfterWeakRef(void)
+static void TestKVORemovalCrash(void)
 {
-	KVOTarget *target = [[KVOTarget alloc] init];
-    
-	MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
-    
-	[target addObserver: target forKeyPath: @"key" options: 0 context: NULL];
-    
-	[target setKey: @"value"];
-    
-    WithPool(^{
-        TEST_ASSERT([ref target] == target);
-    });
-    
-    [target removeObserver:target forKeyPath:@"key"];
-    
-	[target release];
-    
-    TEST_ASSERT([ref target] == nil);
-    
-	[ref release];
-}
-
-static void TestKVOObserveAfterAfterWeakRef(void)
-{
-	OtherKVOTarget *faker = [[OtherKVOTarget alloc] init];
-    
-    WithPool(^{
-        [MAZeroingWeakRef refWithTarget:faker];
-    });
-    
-	[faker addObserver: faker forKeyPath: @"key" options: 0 context: NULL];
-    
-    WithPool(^{
-        [MAZeroingWeakRef refWithTarget:faker];
-    });
-    
-    [faker removeObserver:faker forKeyPath:@"key"];
-    
-	OtherKVOTarget *target = [[OtherKVOTarget alloc] init];
-    
-    
-	MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
-    
-    WithPool(^{
-        TEST_ASSERT([ref target] == target);
-    });
-    
-    
-	[target release];
-    
-    BOOL isNil = [ref target] == nil;
-    
-    TEST_ASSERT(isNil);
-    
-    
-	[ref release];
-    [faker release];
+    NSObject *obj = [[NSObject alloc] init];
+    NSObject *observer = [[NSObject alloc] init];
+    [obj addObserver:observer forKeyPath:@"description" options:NSKeyValueObservingOptionNew context:nil];
+    MAZeroingWeakRef *weakRef = [MAZeroingWeakRef refWithTarget:obj];
+    [obj removeObserver:observer forKeyPath:@"description"];
+    [obj release];
+    NSLog(@"weakRef %@", weakRef.target);
+    [observer release];
 }
 
 int main(int argc, const char * argv[])
@@ -620,9 +531,10 @@ int main(int argc, const char * argv[])
         TEST(TestKVOTarget);
         TEST(TestKVOMultiLevelTarget);
         TEST(TestClassForCoder);
-        TEST(TestKVOObserveAfterWeakRef);
-        TEST(TestKVOObserveBeforeWeakRef);
-        TEST(TestKVOObserveAfterAfterWeakRef);
+        TEST(TestKVOReleaseNoCrash);
+        TEST(TestKVOReleaseCrash);
+        TEST(TestNativeZWRFallback);
+        TEST(TestKVORemovalCrash);
         
         NSString *message;
         if(gFailureCount)

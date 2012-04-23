@@ -7,6 +7,10 @@
 
 #import "MAZeroingWeakRef.h"
 
+#import "MAZeroingWeakRefNativeZWRNotAllowedTable.h"
+
+#import <CommonCrypto/CommonDigest.h>
+
 #import <dlfcn.h>
 #import <libkern/OSAtomic.h>
 #import <objc/runtime.h>
@@ -14,9 +18,6 @@
 #import <mach/port.h>
 #import <pthread.h>
 
-#ifndef USE_ARC_FUNCTIONS_IF_AVAILABLE
-#define USE_ARC_FUNCTIONS_IF_AVAILABLE 1
-#endif
 
 /*
  The COREFOUNDATION_HACK_LEVEL macro allows you to control how much horrible CF
@@ -51,6 +52,19 @@
 #define KVO_HACK_LEVEL 0
 #endif
 
+/*
+ The USE_BLOCKS_BASED_LOCKING macro allows control on the code structure used
+ during lock checking. You want to disable blocks if you want your app to work
+ on iOS 3.x devices. iOS 4.x and above can use blocks.
+
+ 1 - Use blocks for lock checks.
+
+ 0 - Don't use blocks for lock checks.
+ */
+#ifndef USE_BLOCKS_BASED_LOCKING
+#define USE_BLOCKS_BASED_LOCKING 1
+#endif
+
 #if KVO_HACK_LEVEL >= 1
 @interface NSObject (KVOPrivateMethod)
 
@@ -59,13 +73,8 @@
 @end
 #endif
 
-@interface NSObject (MAKVODummyObservedProperty)
-@property(nonatomic) int MAZeroingWeakRef_KVO_dummy_observableProperty;
-@end
 
-@interface MAZeroingWeakRef_KVO_dummy_observer : NSObject
-+ (id)dummyObserver;
-@end
+static void EnsureCustomSubclass(id obj);
 
 @interface MAZeroingWeakRef ()
 
@@ -73,6 +82,7 @@
 - (void)_executeCleanupBlockWithTarget: (id)target;
 
 @end
+
 
 static id (*objc_loadWeak_fptr)(id *location);
 static id (*objc_storeWeak_fptr)(id *location, id obj);
@@ -146,7 +156,6 @@ static pthread_mutex_t gMutex;
 
 static CFMutableDictionaryRef gObjectWeakRefsMap; // maps (non-retained) objects to CFMutableSetRefs containing weak refs
 
-static CFMutableSetRef gObservingInstances;
 static NSMutableSet *gCustomSubclasses;
 static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their custom subclasses
 
@@ -168,7 +177,6 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
         gObjectWeakRefsMap = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
         gCustomSubclasses = [[NSMutableSet alloc] init];
         gCustomSubclassMap = [[NSMutableDictionary alloc] init];
-        gObservingInstances = CFSetCreateMutable(NULL, 0, NULL);
         
         // see if the 10.7 ZWR runtime functions are available
         // nothing special about objc_allocateClassPair, it just
@@ -176,7 +184,7 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
         // the runtime functions
         Dl_info info;
         int success = dladdr(objc_allocateClassPair, &info);
-        if(success && USE_ARC_FUNCTIONS_IF_AVAILABLE)
+        if(success)
         {
             // note: we leak the handle because it's inconsequential
             // and technically, the fptrs would be invalid after a dlclose
@@ -203,7 +211,6 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
     }
 }
 
-#define USE_BLOCKS_BASED_LOCKING 1
 #if USE_BLOCKS_BASED_LOCKING
 #define BLOCK_QUALIFIER __block
 static void WhileLocked(void (^block)(void))
@@ -307,17 +314,28 @@ static void KVOSubclassRelease(id self, SEL _cmd)
 static void KVOSubclassDealloc(id self, SEL _cmd)
 {
     ClearWeakRefsForObject(self);
-    
-    Class cls = object_getClass(self);
-    
-    if(CFSetContainsValue(gObservingInstances, self))
-    {
-        CFSetRemoveValue(gObservingInstances, self);
-        [self removeObserver:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver] forKeyPath:@"MAZeroingWeakRef_KVO_dummy_observableProperty"];
-    }
-    
-    IMP originalDealloc = class_getMethodImplementation(object_getClass(self), (cls == object_getClass(self) ? @selector(MAZeroingWeakRef_KVO_original_dealloc) : @selector(dealloc)));
+    IMP originalDealloc = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_dealloc));
     ((void (*)(id, SEL))originalDealloc)(self, _cmd);
+}
+
+static void KVOSubclassRemoveObserverForKeyPath(id self, SEL _cmd, id observer, NSString *keyPath)
+{
+    WhileLocked({
+        IMP originalIMP = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:));
+        ((void (*)(id, SEL, id, NSString *))originalIMP)(self, _cmd, observer, keyPath);
+        
+        EnsureCustomSubclass(self);
+    });
+}
+
+static void KVOSubclassRemoveObserverForKeyPathContext(id self, SEL _cmd, id observer, NSString *keyPath, void *context)
+{
+    WhileLocked({
+        IMP originalIMP = class_getMethodImplementation(object_getClass(self), @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:context:));
+        ((void (*)(id, SEL, id, NSString *, context))originalIMP)(self, _cmd, observer, keyPath, context);
+        
+        EnsureCustomSubclass(self);
+    });
 }
 
 #if COREFOUNDATION_HACK_LEVEL >= 3
@@ -485,6 +503,64 @@ static BOOL IsKVOSubclass(id obj)
 #endif
 }
 
+// The native ZWR capability table is conceptually a set of SHA1 hashes.
+// Hashes are used instead of class names because the table is large and
+// contains a lot of private classes. Embedding private class names in
+// the binary is likely to cause problems with app review. Manually
+// removing all private classes from the table is a lot of work. Using
+// hashes allows for reasonably quick checks and no private API names.
+// It's implemented as a tree of tables, where each individual table
+// maps to a single byte. The top level of the tree is a 256-entry table.
+// Table entries are a NULL pointer for leading bytes which aren't present
+// at all. Other table entries can either contain a pointer to another
+// table (in which case the process continues recursively), or they can
+// contain a pointer to a single hash. In this second case, this indicates
+// that this hash is the only one present in the table with that prefix
+// and so a simple comparison can be used to check for membership at
+// that point.
+static BOOL HashPresentInTable(unsigned char *hash, int length, struct _NativeZWRTableEntry *table)
+{
+    while(length)
+    {
+        struct _NativeZWRTableEntry entry = table[hash[0]];
+        if(entry.ptr == NULL)
+        {
+            return NO;
+        }
+        else if(!entry.isTable)
+        {
+            return memcmp(entry.ptr, hash + 1, length - 1) == 0;
+        }
+        else
+        {
+            hash++;
+            length--;
+            table = entry.ptr;
+        }
+    }
+    return NO;
+}
+
+static BOOL CanNativeZWRClass(Class c)
+{
+    if(!c)
+        return YES;
+    
+    const char *name = class_getName(c);
+    unsigned char hash[CC_SHA1_DIGEST_LENGTH];
+    CC_SHA1(name, strlen(name), hash);
+    
+    if(HashPresentInTable(hash, CC_SHA1_DIGEST_LENGTH, _MAZeroingWeakRefClassNativeWeakReferenceNotAllowedTable))
+        return NO;
+    else
+        return CanNativeZWRClass(class_getSuperclass(c));
+}
+
+static BOOL CanNativeZWR(id obj)
+{
+    return CanNativeZWRClass(object_getClass(obj));
+}
+
 static Class CreatePlainCustomSubclass(Class class)
 {
     NSString *newName = [NSString stringWithFormat: @"%s_MAZeroingWeakRefSubclass", class_getName(class)];
@@ -506,14 +582,39 @@ static Class CreatePlainCustomSubclass(Class class)
 
 static void PatchKVOSubclass(Class class)
 {
+//    NSLog(@"Patching KVO class %s", class_getName(class));
+    Method removeObserverForKeyPath = class_getInstanceMethod(class, @selector(removeObserver:forKeyPath:));
     Method release = class_getInstanceMethod(class, @selector(release));
     Method dealloc = class_getInstanceMethod(class, @selector(dealloc));
     
+    class_addMethod(class,
+                    @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:),
+                    method_getImplementation(removeObserverForKeyPath),
+                    method_getTypeEncoding(removeObserverForKeyPath));
     class_addMethod(class, @selector(MAZeroingWeakRef_KVO_original_release), method_getImplementation(release), method_getTypeEncoding(release));
     class_addMethod(class, @selector(MAZeroingWeakRef_KVO_original_dealloc), method_getImplementation(dealloc), method_getTypeEncoding(dealloc));
     
+    class_replaceMethod(class,
+                        @selector(removeObserver:forKeyPath:),
+                        (IMP)KVOSubclassRemoveObserverForKeyPath,
+                        method_getTypeEncoding(removeObserverForKeyPath));
     class_replaceMethod(class, @selector(release), (IMP)KVOSubclassRelease, method_getTypeEncoding(release));
     class_replaceMethod(class, @selector(dealloc), (IMP)KVOSubclassDealloc, method_getTypeEncoding(dealloc));
+    
+    // The context variant is only available on 10.7/iOS5+, so only perform that override if the method actually exists.
+    Method removeObserverForKeyPathContext = class_getInstanceMethod(class, @selector(removeObserver:forKeyPath:context:));
+    if(removeObserverForKeyPathContext)
+    {
+        class_addMethod(class,
+                        @selector(MAZeroingWeakRef_KVO_original_removeObserver:forKeyPath:context:),
+                        method_getImplementation(removeObserverForKeyPathContext),
+                        method_getTypeEncoding(removeObserverForKeyPathContext));
+        class_replaceMethod(class,
+                            @selector(removeObserver:forKeyPath:context:),
+                            (IMP)KVOSubclassRemoveObserverForKeyPathContext,
+                            method_getTypeEncoding(removeObserverForKeyPathContext));
+        
+    }
 }
 
 static void RegisterCustomSubclass(Class subclass, Class superclass)
@@ -579,16 +680,6 @@ static void RegisterRef(MAZeroingWeakRef *ref, id target)
 {
     WhileLocked({
         EnsureCustomSubclass(target);
-        
-        // If the real class and the custom class of the target are the same
-        // then the object is a being observed by KVO
-        // Add a dummy observer to the target so KVO won't bypass the patched dealloc
-        if(object_getClass(target) == [gCustomSubclassMap objectForKey:object_getClass(target)] && !CFSetContainsValue(gObservingInstances, target))
-        {
-            CFSetAddValue(gObservingInstances, target);
-            [target addObserver:[MAZeroingWeakRef_KVO_dummy_observer dummyObserver] forKeyPath:@"MAZeroingWeakRef_KVO_dummy_observableProperty" options:0x0 context:NULL];
-        }
-        
         AddWeakRefToObject(target, ref);
 #if COREFOUNDATION_HACK_LEVEL >= 3
         if(IsTollFreeBridged(object_getClass(target), target))
@@ -621,9 +712,10 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 {
     if((self = [self init]))
     {
-        if(objc_storeWeak_fptr)
+        if(objc_storeWeak_fptr && CanNativeZWR(target))
         {
             objc_storeWeak_fptr(&_target, target);
+            _nativeZWR = YES;
         }
         else
         {
@@ -636,7 +728,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (void)dealloc
 {
-    if(objc_storeWeak_fptr)
+    if(objc_storeWeak_fptr && _nativeZWR)
         objc_storeWeak_fptr(&_target, nil);
     else
         UnregisterRef(self);
@@ -659,7 +751,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
     [_cleanupBlock release];
     _cleanupBlock = block;
     
-    if(objc_loadWeak_fptr)
+    if(objc_loadWeak_fptr && _nativeZWR)
     {
         // wrap a pool around this code, otherwise it artificially extends
         // the lifetime of the target object
@@ -690,7 +782,7 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 
 - (id)target
 {
-    if(objc_loadWeak_fptr)
+    if(objc_loadWeak_fptr && _nativeZWR)
     {
         return objc_loadWeak_fptr(&_target);
     }
@@ -721,28 +813,4 @@ static void UnregisterRef(MAZeroingWeakRef *ref)
 #endif
 }
 
-@end
-
-@implementation MAZeroingWeakRef_KVO_dummy_observer
-+ (id)dummyObserver;
-{
-    static id dummyObserver = nil;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        dummyObserver = [[MAZeroingWeakRef_KVO_dummy_observer alloc] init];
-    });
-    
-    return dummyObserver;
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
-{
-}
-
-@end
-
-@implementation NSObject (MAKVODummyObservedProperty)
-- (int)MAZeroingWeakRef_KVO_dummy_observableProperty { return 0; }
-- (void)setMAZeroingWeakRef_KVO_dummy_observableProperty:(int)value { }
 @end
