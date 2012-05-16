@@ -56,8 +56,8 @@
 
 #if __has_feature(objc_arc_weak)
 
-#define MAWeakDeclare(var)        __weak __typeof__((var)) MAWeakVar(var) = var
-#define MAWeakImport(var)         __typeof__((MAWeakVar(var))) var = MAWeakVar(var)
+#define MAWeakDeclare(var)        __weak id MAWeakVar(var) = var
+#define MAWeakImport(var)         __typeof__(var) var = MAWeakVar(var)
 #define MAWeakImportReturn(var)   MAWeakImport(var); do { if(var == nil) return; } while(NO)
 
 #else
