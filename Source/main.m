@@ -522,7 +522,7 @@ int main(int argc, const char * argv[])
         TEST(TestNSArrayTarget);
         TEST(TestNSStringTarget);
 #if __APPLE__
-        TEST(TestNSConstantTarget);i
+        TEST(TestNSConstantTarget);
 #endif
         TEST(TestCleanup);
         TEST(TestCFCleanup);
