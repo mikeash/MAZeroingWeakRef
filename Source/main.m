@@ -115,16 +115,14 @@ BOOL TestException(void (^block)(void))
 
 static BOOL WaitForNil(id (^block)(void))
 {
-    NSProcessInfo *pi = [NSProcessInfo processInfo];
-    
-    NSTimeInterval start = [pi systemUptime];
+    NSDate *start = [NSDate date];
     __block BOOL found;
     do
     {
         WithPool(^{
             found = block() != nil;
         });
-    } while(found && [pi systemUptime] - start < 10);
+    } while(found && [[NSDate date] timeIntervalSinceDate:start] < 10);
     
     return !found;
 }
@@ -227,6 +225,7 @@ static void TestNSStringTarget(void)
     [ref release];
 }
 
+#if __APPLE__
 static void TestNSConstantTarget(void)
 {
     if ([MAZeroingWeakRef canRefCoreFoundationObjects]) {
@@ -248,6 +247,7 @@ static void TestNSConstantTarget(void)
       [ref release];
     });
 }
+#endif
 
 static void TestCleanup(void)
 {
@@ -278,6 +278,7 @@ static void TestCFCleanup(void)
     [ref release];
 }
 
+#if __APPLE__
 static void TestNotification(void)
 {
     int notificationCounter = 0;
@@ -289,6 +290,7 @@ static void TestNotification(void)
     [[NSNotificationCenter defaultCenter] postNotificationName: @"name" object: @"object"];
     TEST_ASSERT(notificationCounter == 1);
 }
+#endif
 
 static void TestWeakArray(void)
 {
@@ -519,10 +521,14 @@ int main(int argc, const char * argv[])
         TEST(TestRefToRef);
         TEST(TestNSArrayTarget);
         TEST(TestNSStringTarget);
+#if __APPLE__
         TEST(TestNSConstantTarget);
+#endif
         TEST(TestCleanup);
         TEST(TestCFCleanup);
+#if __APPLE__
         TEST(TestNotification);
+#endif
         TEST(TestWeakArray);
         TEST(TestWeakDictionary);
         TEST(TestWeakProxy);

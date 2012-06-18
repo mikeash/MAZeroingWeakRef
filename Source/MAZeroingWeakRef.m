@@ -9,6 +9,7 @@
 
 #import "MAZeroingWeakRefNativeZWRNotAllowedTable.h"
 
+#if __APPLE__
 #import <CommonCrypto/CommonDigest.h>
 
 #import <dlfcn.h>
@@ -17,6 +18,9 @@
 #import <mach/mach.h>
 #import <mach/port.h>
 #import <pthread.h>
+#else
+#import <pthread.h>
+#endif
 
 
 /*
@@ -154,7 +158,11 @@ extern Class *__CFRuntimeObjCClassTable;
 
 static pthread_mutex_t gMutex;
 
+#if __APPLE__
 static CFMutableDictionaryRef gObjectWeakRefsMap; // maps (non-retained) objects to CFMutableSetRefs containing weak refs
+#else
+static NSMapTable *gObjectWeakRefsMap;
+#endif
 
 static NSMutableSet *gCustomSubclasses;
 static NSMutableDictionary *gCustomSubclassMap; // maps regular classes to their custom subclasses
@@ -174,7 +182,11 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
         pthread_mutex_init(&gMutex, &mutexattr);
         pthread_mutexattr_destroy(&mutexattr);
         
+#if __APPLE__
         gObjectWeakRefsMap = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
+#else
+        gObjectWeakRefsMap = [[NSMapTable mapTableWithWeakToStrongObjects] retain];
+#endif
         gCustomSubclasses = [[NSMutableSet alloc] init];
         gCustomSubclassMap = [[NSMutableDictionary alloc] init];
         
@@ -182,6 +194,7 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
         // nothing special about objc_allocateClassPair, it just
         // seems like a reasonable and safe choice for finding
         // the runtime functions
+#if __APPLE__
         Dl_info info;
         int success = dladdr(objc_allocateClassPair, &info);
         if(success)
@@ -203,6 +216,7 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
                 }
             }
         }
+#endif
         
 #if COREFOUNDATION_HACK_LEVEL >= 3
         gCFWeakTargets = CFSetCreateMutable(NULL, 0, NULL);
@@ -231,6 +245,7 @@ static void WhileLocked(void (^block)(void))
 
 static void AddWeakRefToObject(id obj, MAZeroingWeakRef *ref)
 {
+#if __APPLE__
     CFMutableSetRef set = (void *)CFDictionaryGetValue(gObjectWeakRefsMap, obj);
     if(!set)
     {
@@ -239,16 +254,31 @@ static void AddWeakRefToObject(id obj, MAZeroingWeakRef *ref)
         CFRelease(set);
     }
     CFSetAddValue(set, ref);
+#else
+    NSHashTable *set = [gObjectWeakRefsMap objectForKey:obj];
+    if (!set)
+    {
+        set = [NSHashTable hashTableWithWeakObjects];
+        [gObjectWeakRefsMap setObject:set forKey:obj];
+    }
+    [set addObject:ref];
+#endif
 }
 
 static void RemoveWeakRefFromObject(id obj, MAZeroingWeakRef *ref)
 {
+#if __APPLE__
     CFMutableSetRef set = (void *)CFDictionaryGetValue(gObjectWeakRefsMap, obj);
     CFSetRemoveValue(set, ref);
+#else
+    NSHashTable *set = [gObjectWeakRefsMap objectForKey:obj];
+    [set removeObject:ref];
+#endif
 }
 
 static void ClearWeakRefsForObject(id obj)
 {
+#if __APPLE__
     CFMutableSetRef set = (void *)CFDictionaryGetValue(gObjectWeakRefsMap, obj);
     if(set)
     {
@@ -258,6 +288,16 @@ static void ClearWeakRefsForObject(id obj)
         [setCopy release];
         CFDictionaryRemoveValue(gObjectWeakRefsMap, obj);
     }
+#else
+    NSHashTable *set = [gObjectWeakRefsMap objectForKey:obj];
+    if (set)
+    {
+        NSArray *setContents = [set allObjects];
+        [setContents makeObjectsPerformSelector:@selector(_zeroTarget)];
+        [setContents makeObjectsPerformSelector:@selector(_executeCleanupBlockWithTarget:) withObject:obj];
+        [gObjectWeakRefsMap removeObjectForKey:obj];
+    }
+#endif
 }
 
 static Class GetCustomSubclass(id obj)
@@ -518,6 +558,7 @@ static BOOL IsKVOSubclass(id obj)
 // that this hash is the only one present in the table with that prefix
 // and so a simple comparison can be used to check for membership at
 // that point.
+#if __APPLE__
 static BOOL HashPresentInTable(unsigned char *hash, int length, struct _NativeZWRTableEntry *table)
 {
     while(length)
@@ -540,20 +581,25 @@ static BOOL HashPresentInTable(unsigned char *hash, int length, struct _NativeZW
     }
     return NO;
 }
+#endif
 
 static BOOL CanNativeZWRClass(Class c)
 {
+#if __APPLE__
     if(!c)
         return YES;
     
     const char *name = class_getName(c);
     unsigned char hash[CC_SHA1_DIGEST_LENGTH];
     CC_SHA1(name, strlen(name), hash);
-    
+
     if(HashPresentInTable(hash, CC_SHA1_DIGEST_LENGTH, _MAZeroingWeakRefClassNativeWeakReferenceNotAllowedTable))
         return NO;
     else
         return CanNativeZWRClass(class_getSuperclass(c));
+#else
+    return NO;
+#endif
 }
 
 static BOOL CanNativeZWR(id obj)
