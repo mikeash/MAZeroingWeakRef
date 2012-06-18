@@ -20,7 +20,6 @@
 #import <pthread.h>
 #else
 #import <pthread.h>
-#include <openssl/sha.h>
 #endif
 
 
@@ -256,12 +255,11 @@ static void AddWeakRefToObject(id obj, MAZeroingWeakRef *ref)
     }
     CFSetAddValue(set, ref);
 #else
-    NSMutableSet *set = [gObjectWeakRefsMap objectForKey:obj];
+    NSHashTable *set = [gObjectWeakRefsMap objectForKey:obj];
     if (!set)
     {
-        set = [[NSMutableSet alloc] init];
+        set = [NSHashTable hashTableWithWeakObjects];
         [gObjectWeakRefsMap setObject:set forKey:obj];
-        [set release];
     }
     [set addObject:ref];
 #endif
@@ -273,7 +271,7 @@ static void RemoveWeakRefFromObject(id obj, MAZeroingWeakRef *ref)
     CFMutableSetRef set = (void *)CFDictionaryGetValue(gObjectWeakRefsMap, obj);
     CFSetRemoveValue(set, ref);
 #else
-    NSMutableSet *set = [gObjectWeakRefsMap objectForKey:obj];
+    NSHashTable *set = [gObjectWeakRefsMap objectForKey:obj];
     [set removeObject:ref];
 #endif
 }
@@ -291,13 +289,13 @@ static void ClearWeakRefsForObject(id obj)
         CFDictionaryRemoveValue(gObjectWeakRefsMap, obj);
     }
 #else
-    NSMutableSet *set = [gObjectWeakRefsMap objectForKey:obj];
+    NSHashTable *set = [gObjectWeakRefsMap objectForKey:obj];
     if (set)
     {
-        NSSet *setCopy = [[NSSet alloc] initWithSet:set];
-        [setCopy makeObjectsPerformSelector:@selector(_zeroTarget)];
-        [setCopy makeObjectsPerformSelector:@selector(_executeCleanupBlockWithTarget:) withObject:obj];
-        [setCopy release];
+        NSArray *setContents = [set allObjects];
+        [setContents makeObjectsPerformSelector:@selector(_zeroTarget)];
+        [setContents makeObjectsPerformSelector:@selector(_executeCleanupBlockWithTarget:) withObject:obj];
+        [setContents release];
         [gObjectWeakRefsMap removeObjectForKey:obj];
     }
 #endif
@@ -561,6 +559,7 @@ static BOOL IsKVOSubclass(id obj)
 // that this hash is the only one present in the table with that prefix
 // and so a simple comparison can be used to check for membership at
 // that point.
+#if __APPLE__
 static BOOL HashPresentInTable(unsigned char *hash, int length, struct _NativeZWRTableEntry *table)
 {
     while(length)
@@ -583,28 +582,25 @@ static BOOL HashPresentInTable(unsigned char *hash, int length, struct _NativeZW
     }
     return NO;
 }
-
-#if !__APPLE__
-#define CC_SHA1_DIGEST_LENGTH 20
 #endif
 
 static BOOL CanNativeZWRClass(Class c)
 {
+#if __APPLE__
     if(!c)
         return YES;
     
     const char *name = class_getName(c);
     unsigned char hash[CC_SHA1_DIGEST_LENGTH];
-#if __APPLE__
     CC_SHA1(name, strlen(name), hash);
-#else
-    SHA1((const unsigned char *)name, strlen(name), hash);
-#endif    
 
     if(HashPresentInTable(hash, CC_SHA1_DIGEST_LENGTH, _MAZeroingWeakRefClassNativeWeakReferenceNotAllowedTable))
         return NO;
     else
         return CanNativeZWRClass(class_getSuperclass(c));
+#else
+    return NO;
+#endif
 }
 
 static BOOL CanNativeZWR(id obj)
