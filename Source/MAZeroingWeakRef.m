@@ -186,6 +186,7 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
         gObjectWeakRefsMap = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
 #else
         gObjectWeakRefsMap = [[NSMapTable mapTableWithWeakToStrongObjects] retain];
+        NSLog(@"Creating weak refs map");
 #endif
         gCustomSubclasses = [[NSMutableSet alloc] init];
         gCustomSubclassMap = [[NSMutableDictionary alloc] init];
@@ -260,8 +261,10 @@ static void AddWeakRefToObject(id obj, MAZeroingWeakRef *ref)
     {
         set = [NSHashTable hashTableWithWeakObjects];
         [gObjectWeakRefsMap setObject:set forKey:obj];
+        NSLog(@"Creating set for %p", obj);
     }
     [set addObject:ref];
+    NSLog(@"Adding %p to set for %p", ref, obj);
 #endif
 }
 
@@ -273,6 +276,7 @@ static void RemoveWeakRefFromObject(id obj, MAZeroingWeakRef *ref)
 #else
     NSHashTable *set = [gObjectWeakRefsMap objectForKey:obj];
     [set removeObject:ref];
+    NSLog(@"Removing %p from set for %p", ref, obj);
 #endif
 }
 
@@ -290,12 +294,12 @@ static void ClearWeakRefsForObject(id obj)
     }
 #else
     NSHashTable *set = [gObjectWeakRefsMap objectForKey:obj];
+    NSLog(@"Cleaning up refs for %p", obj);
     if (set)
     {
         NSArray *setContents = [set allObjects];
         [setContents makeObjectsPerformSelector:@selector(_zeroTarget)];
         [setContents makeObjectsPerformSelector:@selector(_executeCleanupBlockWithTarget:) withObject:obj];
-        [setContents release];
         [gObjectWeakRefsMap removeObjectForKey:obj];
     }
 #endif

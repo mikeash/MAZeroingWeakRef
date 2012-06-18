@@ -23,9 +23,9 @@ libweakref_OBJC_FILES = \
 libweakref_RESOURCE_FILES =
 libweakref_CFLAGS = -fblocks -fobjc-nonfragile-abi -g -Os
 libweakref_OBJCFLAGS = -fblocks -fobjc-nonfragile-abi -g -Os
-libweakref_OBJC_LIBS = -ldispatch -lcrypto
+libweakref_OBJC_LIBS = 
 libweakref_LDFLAGS = -g -Os
-libweakref_INCLUDE_DIRS = -ISource/ -I/usr/local/ssl/include
+libweakref_INCLUDE_DIRS = -ISource/
 
 include $(GNUSTEP_MAKEFILES)/library.make
 
