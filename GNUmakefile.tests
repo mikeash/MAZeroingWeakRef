@@ -1,0 +1,28 @@
+include $(GNUSTEP_MAKEFILES)/common.make
+
+CC=clang
+
+TOOL_NAME = tests
+tests_HEADER_FILES_DIR = Source
+tests_HEADER_FILES = \
+    MAZeroingWeakRef.h \
+    MAWeakArray.h \
+    MAWeakDictionary.h \
+    MAZeroingWeakProxy.h \
+    MAZeroingWeakRefNativeZWRNotAllowedTable.h
+
+tests_OBJC_FILES = \
+    Source/main.m \
+    Source/MAWeakArray.m \
+    Source/MAWeakDictionary.m \
+    Source/MAZeroingWeakProxy.m \
+    Source/MAZeroingWeakRef.m
+
+tests_CFLAGS = -fblocks -fobjc-nonfragile-abi -g -Os
+tests_OBJCFLAGS = -fblocks -fobjc-nonfragile-abi -DNS_BLOCKS_AVAILABLE -g -Os
+tests_OBJC_LIBS = 
+tests_LDFLAGS = -g -Os
+tests_INCLUDE_DIRS = -ISource/
+
+include $(GNUSTEP_MAKEFILES)/tool.make
+
