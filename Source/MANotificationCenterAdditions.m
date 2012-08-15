@@ -12,7 +12,7 @@
 
 @implementation NSNotificationCenter (MAZeroingWeakRefAdditions)
 
-- (void)addWeakObserver: (id)observer selector: (SEL)selector name: (NSString *)name object: (NSString *)object
+- (void)addWeakObserver: (id)observer selector: (SEL)selector name: (NSString *)name object: (id)object
 {
     MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: observer];
     
