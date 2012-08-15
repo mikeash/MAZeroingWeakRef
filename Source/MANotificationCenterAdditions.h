@@ -10,6 +10,6 @@
 
 @interface NSNotificationCenter (MAZeroingWeakRefAdditions)
 
-- (void)addWeakObserver: (id)observer selector: (SEL)selector name: (NSString *)name object: (NSString *)object;
+- (void)addWeakObserver: (id)observer selector: (SEL)selector name: (NSString *)name object: (id)object;
 
 @end
