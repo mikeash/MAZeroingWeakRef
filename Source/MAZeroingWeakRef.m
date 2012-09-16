@@ -665,7 +665,7 @@ static void PatchKVOSubclass(Class class)
 
 static void RegisterCustomSubclass(Class subclass, Class superclass)
 {
-    [gCustomSubclassMap setObject: subclass forKey: superclass];
+    [gCustomSubclassMap setObject: subclass forKey: (id <NSCopying>) superclass];
     [gCustomSubclasses addObject: subclass];
 }
 
