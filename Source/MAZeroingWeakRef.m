@@ -78,6 +78,15 @@
 #endif
 
 
+@interface NSObject (MAZeroingWeakRefSwizzled)
+- (void)MAZeroingWeakRef_KVO_original_release;
+- (void)MAZeroingWeakRef_KVO_original_dealloc;
+- (void)MAZeroingWeakRef_KVO_original_addObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath context:(void *)context;
+- (void)MAZeroingWeakRef_KVO_original_removeObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath;
+- (void)MAZeroingWeakRef_KVO_original_removeObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath context:(void *)context;
+@end
+
+
 static void EnsureCustomSubclass(id obj);
 
 @interface MAZeroingWeakRef ()
