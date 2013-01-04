@@ -12,7 +12,7 @@
 
 @implementation NSNotificationCenter (MAZeroingWeakRefAdditions)
 
-- (void)addWeakObserver: (id)observer selector: (SEL)selector name: (NSString *)name object: (id)object
+- (id)addWeakObserver: (id)observer selector: (SEL)selector name: (NSString *)name object: (id)object
 {
     MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: observer];
     
@@ -29,6 +29,8 @@
         [self removeObserver: noteObj];
         [ref autorelease];
     }];
+    
+    return noteObj;
 }
 
 @end
