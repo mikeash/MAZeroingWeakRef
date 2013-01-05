@@ -10,6 +10,9 @@
 
 @interface NSNotificationCenter (MAZeroingWeakRefAdditions)
 
-- (void)addWeakObserver: (id)observer selector: (SEL)selector name: (NSString *)name object: (id)object;
+/**
+ * Returns an opaque observation handle that can be removed with NSNotificationCenter's 'removeObserver:'.
+ */
+- (id)addWeakObserver: (id)observer selector: (SEL)selector name: (NSString *)name object: (id)object;
 
 @end
