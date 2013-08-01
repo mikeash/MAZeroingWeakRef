@@ -57,13 +57,13 @@
 #if __has_feature(objc_arc_weak)
 
 #define MAWeakDeclare(var)        __weak id MAWeakVar(var) = var
-#define MAWeakImport(var)         __typeof__(var) var = MAWeakVar(var)
+#define MAWeakImport(var)         _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored \"-Wshadow\"") __typeof__(var) var = MAWeakVar(var) _Pragma("clang diagnostic pop")
 #define MAWeakImportReturn(var)   MAWeakImport(var); do { if(var == nil) return; } while(NO)
 
 #else
 
 #define MAWeakDeclare(var)        __typeof__((var)) MAWeakVar(var) = (id)[MAZeroingWeakRef refWithTarget:var]
-#define MAWeakImport(var)         __typeof__((MAWeakVar(var))) var = [(MAZeroingWeakRef *)MAWeakVar(var) target]
+#define MAWeakImport(var)         _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored \"-Wshadow\"") __typeof__((MAWeakVar(var))) var = [(MAZeroingWeakRef *)MAWeakVar(var) target] _Pragma("clang diagnostic pop")
 #define MAWeakImportReturn(var)   MAWeakImport(var); do { if(var == nil) return; } while(NO)
 
 #endif
