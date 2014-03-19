@@ -273,7 +273,7 @@ static void TestCFCleanup(void)
     MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: obj];
     [ref setCleanupBlock: ^(id target) { cleanedUp = YES; }];
     [obj release];
-    TEST_ASSERT(WaitForNil(^{ return (id)!cleanedUp; })
+    TEST_ASSERT(WaitForNil(^{ return (id)(intptr_t)!cleanedUp; })
 );
     [ref release];
 }

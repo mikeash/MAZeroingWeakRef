@@ -502,8 +502,8 @@ static BOOL IsTollFreeBridged(Class class, id obj)
 
 static BOOL IsConstantObject(id obj)
 {
-  unsigned int retainCount = [obj retainCount];
-  return retainCount == UINT_MAX || retainCount == INT_MAX;
+  NSUInteger retainCount = [obj retainCount];
+  return retainCount == NSUIntegerMax || retainCount == NSIntegerMax;
 }
 
 #if COREFOUNDATION_HACK_LEVEL >= 3
@@ -600,7 +600,7 @@ static BOOL CanNativeZWRClass(Class c)
     
     const char *name = class_getName(c);
     unsigned char hash[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(name, strlen(name), hash);
+    CC_SHA1(name, (CC_LONG)strlen(name), hash);
 
     if(HashPresentInTable(hash, CC_SHA1_DIGEST_LENGTH, _MAZeroingWeakRefClassNativeWeakReferenceNotAllowedTable))
         return NO;
